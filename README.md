@@ -7,3 +7,4 @@ an added step, after each creation of a new spike, that moves continuously both 
 The notebook example.ipynb gives a few examples.
 
 Works with Julia 0.5.1
+
