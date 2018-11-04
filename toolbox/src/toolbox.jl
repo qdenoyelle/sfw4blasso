@@ -1,8 +1,8 @@
 module toolbox
 
-using Convex,SCS
-
-#@everywhere using Convex,SCS
+#using Convex,SCS
+using LinearAlgebra
+using Statistics
 
 function Min(u::Array{Float64})
     m=u[1];
@@ -60,17 +60,10 @@ function conditionnement(A::Array{Float64,2})
   return abs(lmax/lmin)
 end
 
-function meshgrid{T}(vx::AbstractVector{T}, vy::AbstractVector{T})
-    m, n = length(vy), length(vx);
-    vx = reshape(vx, 1, n);
-    vy = reshape(vy, m, 1);
-    return(repmat(vx, m, 1), repmat(vy, 1, n));
-end
-
 function deleteZeroAmpSpikes(u::Array{Float64,1},show_warning=false;d::Int64=1)
     N=lengthMeasure(u,d=d);
     a,X=decompAmpPos(u,d=d);
-    I=Array{Int64}(0);
+    I=Array{Int64}(undef,0);
     j=1;
     for i in 1:N
         if a[j]==0.0
@@ -88,8 +81,8 @@ end
 
 function pruneSpikes(u::Array{Float64,1};d::Int64=1)
     a,x=toolbox.decompAmpPos(u,d=d);
-    new_a,new_x=Array{Float64}(0),Array{typeof(x[1])}(0);
-    list_ind=Array{Int64}(0);
+    new_a,new_x=Array{Float64}(undef,0),Array{typeof(x[1])}(undef,0);
+    list_ind=Array{Int64}(undef,0);
     sum_a=0.0;
     N=length(a);
     pruned=false;
@@ -110,36 +103,10 @@ function pruneSpikes(u::Array{Float64,1};d::Int64=1)
         deleteat!(x,list_ind);
         deleteat!(a,list_ind);
         sum_a=0.0;
-        list_ind=Array{Int64}(0);
+        list_ind=Array{Int64}(undef,0);
     end
 
     return recompAmpPos(new_a,new_x,d=d),pruned
-end
-
-function flatnorm(a,x,b,y,tau=20.0)
-  # flat_norm - compute flat norm
-  #
-  #   d = flat_norm(x,a,y,b,tau);
-  #
-  #   d is the flat norm between
-  #       sum_i a_i delta_{x_i}
-  #       sum_j b_j delta_{y_j}
-  #
-  #   Copyright (c) 2017 Quentin Denoyelle
-
-  X=vcat(x,y);
-  A=vcat(a,-b);
-
-  I=sortperm(X)
-  X=X[I];
-  A=A[I];
-
-  P=length(X);
-  f=Variable(P);
-  p=maximize(A'*f,maximum(abs(f))<=tau,abs(f[2:end]-f[1:end-1])<=X[2:end]-X[1:end-1]);
-  solve!(p, SCSSolver(eps=1e-4,verbose=0,max_iters=2000000))
-
-  return p.optval
 end
 
 function lengthMeasure(u::Array{Float64,1};d::Int64=1)
@@ -149,9 +116,9 @@ end
 function decompAmpPos(u::Array{Float64,1};d::Int64=1)
     N=lengthMeasure(u,d=d);
     if d>1
-      x=Array{Array{Float64,1}}(N);
+      x=Array{Array{Float64,1}}(undef,N);
     else
-      x=Array{Float64}(N);
+      x=Array{Float64}(undef,N);
     end
     a=u[1:N];
     for i in 1:N
@@ -174,7 +141,7 @@ end
 
 function recompAmpPos(a::Array{Float64,1},x::Array{Array{Float64,1},1};d::Int64=1)
   N=length(a);
-  u=Array{Float64}(length(a)*(d+1));
+  u=Array{Float64}(undef,length(a)*(d+1));
   for i in 1:N
     u[i]=a[i];
   end
@@ -185,18 +152,6 @@ function recompAmpPos(a::Array{Float64,1},x::Array{Array{Float64,1},1};d::Int64=
   end
 
   return u
-end
-
-function sendto(p::Int; args...)
-    for (nm, val) in args
-        @spawnat(p, eval(Main, Expr(:(=), nm, val)))
-    end
-end
-
-function sendto(ps::Vector{Int}; args...)
-    for p in ps
-        sendto(p; args...)
-    end
 end
 
 function projgradient(g::Array{Float64,1},ind::Array{Int64,1})
@@ -367,7 +322,7 @@ function clusterPoints(XY::Array{Array{Float64,1},1},d::Float64)
         end
     end
 
-    c=Array{Int64}(0);
+    c=Array{Int64}(undef,0);
     for i in 1:length(cluster)
         c=[cluster[i][1]];
         for j in 1:length(cluster[i])
@@ -378,35 +333,6 @@ function clusterPoints(XY::Array{Array{Float64,1},1},d::Float64)
         cluster[i]=sort(c);
     end
     return cluster
-end
-
-function readCSV(namefile::String;kwargs...)
-    key_kw=[kwargs[i][1] for i in 1:length(kwargs)];
-    if :nImage in key_kw
-        nImage=kwargs[find(key_kw.==:nImage)[1]][2];
-    else
-        nImage=Inf;
-    end
-    an,xn,yn,zn=Array{Float64}(0),Array{Float64}(0),Array{Float64}(0),Array{Float64}(0);
-    i,frameold,nframe=0,0,0;
-    f = open(namefile);
-    for ln in eachline(f)
-        if i>=0
-            data=[parse(Float64, lln) for lln in split(ln,",")];
-            frame,x,y,z,a=convert(Int64,data[2]),data[3],data[4],data[5],data[6];
-            if frame != frameold
-                nframe+=1;
-                frameold=frame;
-            end
-            if nframe-1 == nImage
-                break;
-            end
-            append!(xn,[x]);append!(yn,[y]);append!(zn,[z]);append!(an,[a]);
-        end
-        i+=1;
-    end
-    close(f);
-    return an,xn,yn,zn
 end
 
 

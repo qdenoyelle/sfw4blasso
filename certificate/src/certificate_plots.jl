@@ -15,7 +15,7 @@ function plotEtaL(u::Array{Float64,1},v::Array{Float64,1},op::blasso.operator,la
   else
     plot(v,etaL,"g",lw=1.0);
   end
-  plot(collect(linspace(op.bounds[1],op.bounds[2],200)),ones(200),"black",linestyle="--",lw=1.0)
+  plot(collect(range(op.bounds[1],stop=op.bounds[2],length=200)),ones(200),"black",linestyle="--",lw=1.0)
   ax=gca();
   ax[:set_xlim]([op.bounds[1],op.bounds[2]]);
 
@@ -114,28 +114,28 @@ function plotEtaV(etaV::Function,op::blasso.operator;kwargs...)
   if op.dim==3
     if :z in key_kw
       z=kwargs[find(key_kw.==:z)][1][2];
-      u=linspace(maximum([op.bounds[1][1],xb[1]]),minimum([op.bounds[2][1],xb[2]]),ngrid);
-      v=linspace(maximum([op.bounds[1][2],yb[1]]),minimum([op.bounds[2][2],yb[2]]),ngrid);
+      u=range(maximum([op.bounds[1][1],xb[1]]),stop=minimum([op.bounds[2][1],xb[2]]),length=ngrid);
+      v=range(maximum([op.bounds[1][2],yb[1]]),stop=minimum([op.bounds[2][2],yb[2]]),length=ngrid);
       xlab,ylab="x","y";
     elseif :y in key_kw
       y=kwargs[find(key_kw.==:y)][1][2];
-      u=linspace(maximum([op.bounds[1][1],xb[1]]),minimum([op.bounds[2][1],xb[2]]),ngrid);
-      v=linspace(maximum([op.bounds[1][3],zb[1]]),minimum([op.bounds[2][3],zb[2]]),ngrid);
+      u=range(maximum([op.bounds[1][1],xb[1]]),stop=minimum([op.bounds[2][1],xb[2]]),length=ngrid);
+      v=range(maximum([op.bounds[1][3],zb[1]]),stop=minimum([op.bounds[2][3],zb[2]]),length=ngrid);
       xlab,ylab="x","z";
     elseif :x in key_kw
       x=kwargs[find(key_kw.==:x)][1][2];
-      u=linspace(maximum([op.bounds[1][2],yb[1]]),minimum([op.bounds[2][2],yb[2]]),ngrid);
-      v=linspace(maximum([op.bounds[1][3],zb[1]]),minimum([op.bounds[2][3],zb[2]]),ngrid);
+      u=range(maximum([op.bounds[1][2],yb[1]]),stop=minimum([op.bounds[2][2],yb[2]]),length=ngrid);
+      v=range(maximum([op.bounds[1][3],zb[1]]),stop=minimum([op.bounds[2][3],zb[2]]),length=ngrid);
       xlab,ylab="y","z";
     else
       z=(op.bounds[1][3]+op.bounds[2][3])/2;
-      u=linspace(maximum([op.bounds[1][1],xb[1]]),minimum([op.bounds[2][1],xb[2]]),ngrid);
-      v=linspace(maximum([op.bounds[1][2],yb[1]]),minimum([op.bounds[2][2],yb[2]]),ngrid);
+      u=range(maximum([op.bounds[1][1],xb[1]]),stop=minimum([op.bounds[2][1],xb[2]]),length=ngrid);
+      v=range(maximum([op.bounds[1][2],yb[1]]),stop=minimum([op.bounds[2][2],yb[2]]),length=ngrid);
       xlab,ylab="x","y";
     end
   else
-    u=linspace(maximum([op.bounds[1][1],xb[1]]),minimum([op.bounds[2][1],xb[2]]),ngrid);
-    v=linspace(maximum([op.bounds[1][2],yb[1]]),minimum([op.bounds[2][2],yb[2]]),ngrid);
+    u=range(maximum([op.bounds[1][1],xb[1]]),stop=minimum([op.bounds[2][1],xb[2]]),length=ngrid);
+    v=range(maximum([op.bounds[1][2],yb[1]]),stop=minimum([op.bounds[2][2],yb[2]]),length=ngrid);
     xlab,ylab="x","y";
   end
 
@@ -165,7 +165,7 @@ function plotEtaV(etaV::Function,op::blasso.operator;kwargs...)
     ax[:view_init](elev=el, azim=az)
   else
     println(minimum(etaV_list),maximum(etaV_list))
-    levels=collect(linspace(minimum(etaV_list),maximum(etaV_list),nlevels));
+    levels=collect(range(minimum(etaV_list),stop=maximum(etaV_list),length=nlevels));
     ax=gca();
     #ax[:set_aspect]("equal")
     sc=ax[:contourf](U,V,etaV_list,cmap=c,levels=levels,vmax=1.1,vmin=0.0);

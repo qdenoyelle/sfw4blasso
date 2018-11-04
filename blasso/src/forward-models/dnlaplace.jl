@@ -1,5 +1,5 @@
 # Normalized Discrete Laplace Transform
-type dnlaplace <: dLaplace
+mutable struct dnlaplace <: dLaplace
   rl_model::Bool
   dim::Int64
   bounds::Array{Float64,1}
@@ -18,14 +18,14 @@ function setKernel(rl_model::Bool,bounds::Array{Float64,1},p::Array{Float64,1};k
     nbpointsgrid=kwargs[find(key_kw.==:nbpointsgrid)][1][2];
   else
     lSample=3;
-    nbpointsgrid=convert(Int64,round(5*lSample*abs(b-a),0));
+    nbpointsgrid=convert(Int64,round(5*lSample*abs(b-a);digits=0));
   end
-  g=collect(linspace(a,b,nbpointsgrid));
+  g=collect(range(a,stop=b,length=nbpointsgrid));
 
   return dnlaplace(rl_model,dim,bounds,length(p),p,nbpointsgrid,g)
 end
 
-type discretenormalizedlaplacetransform <: operator
+mutable struct discretenormalizedlaplacetransform <: operator
   ker::DataType
   dim::Int64
   rl_model::Bool
@@ -93,7 +93,7 @@ function setoperator(kernel::dnlaplace,a0::Array{Float64,1},x0::Array{Float64,1}
   normPhi(x::Float64)=norm(fob(x));
 
   N=length(x0);
-  a0_scaled=Array(Float64,N);
+  a0_scaled=Array{Float64}(undef,N);
   @simd for i in 1:N
     if kernel.rl_model
       @inbounds a0_scaled[i]=a0[i]*normPhi(x0[i]);
@@ -103,31 +103,33 @@ function setoperator(kernel::dnlaplace,a0::Array{Float64,1},x0::Array{Float64,1}
   end
 
   y=sum([a0_scaled[i]*phiVect(x0[i]) for i in 1:length(x0)])+w;
-  normObs=.5*vecdot(y,y);
+  normObs=.5*dot(y,y);
 
   PhisY=zeros(length(kernel.grid));
   for i in 1:length(kernel.grid)
-    PhisY[i]=vecdot(Phi[i],y);
+    PhisY[i]=dot(Phi[i],y);
   end
 
   function ob(x::Float64,y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(x::Float64,y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(x),y);
+    return dot(d1phiVect(x),y);
   end
   function d2ob(x::Float64,y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(x),y);
+    return dot(d2phiVect(x),y);
   end
 
   function correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(phiVect(x[1]),Phiu-y);
+    return dot(phiVect(x[1]),Phiu-y);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d1phiVect(x[1]),Phiu-y);
+    return [dot(d1phiVect(x[1]),Phiu-y)];
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d2phiVect(x[1]),Phiu-y);
+    d2c=zeros(kernel.dim,kernel.dim);
+    d2c[1,1]=dot(d2phiVect(x[1]),Phiu-y);
+    return d2c;
   end
 
   discretenormalizedlaplacetransform(typeof(kernel),kernel.dim,kernel.rl_model,kernel.bounds,normObs,normPhi,Phi,PhisY,phiVect,d1phiVect,d2phiVect,y,c,ob,d10c,d01c,d11c,d20c,d02c,d1ob,d2ob,correl,d1correl,d2correl);
@@ -143,7 +145,7 @@ end
 function minCorrelOnGrid(Phiu::Array{Float64,1},kernel::blasso.dnlaplace,op::blasso.operator,positivity::Bool=true)
   correl_min,argmin=Inf,zeros(op.dim);
   for i in 1:length(kernel.grid)
-    buffer=vecdot(op.Phi[i],Phiu)-op.PhisY[i];
+    buffer=dot(op.Phi[i],Phiu)-op.PhisY[i];
     if !positivity
       buffer=-abs(buffer);
     end

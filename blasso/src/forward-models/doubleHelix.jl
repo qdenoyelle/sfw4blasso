@@ -1,4 +1,4 @@
-type doubleHelix <: discrete
+mutable struct doubleHelix <: discrete
   dim::Int64
   px::Array{Float64,1}
   py::Array{Float64,1}
@@ -26,12 +26,12 @@ end
 function setKernel(Npx::Int64,Npy::Int64,Dpx::Float64,Dpy::Float64,fp::Float64,wdth::Float64,sigma::Array{Float64,1},bounds::Array{Array{Float64,1},1})
   sigmax,sigmay=sigma[1],sigma[2];
 
-  px=collect(Dpx/2+linspace(0,(Npx-1)*Dpx,Npx));
-  py=collect(Dpy/2+linspace(0,(Npy-1)*Dpy,Npy));
+  px=collect(Dpx/2+range(0,stop=(Npx-1)*Dpx,length=Npx));
+  py=collect(Dpy/2+range(0,stop=(Npy-1)*Dpy,length=Npy));
 
   dim=3;
   a,b=bounds[1],bounds[2];
-  p=Array{Array{Float64,1}}(0);
+  p=Array{Array{Float64,1}}(undef,0);
   for pyi in py
     for pxi in px
       append!(p,[[pxi,pyi]]);
@@ -51,16 +51,16 @@ function setKernel(Npx::Int64,Npy::Int64,Dpx::Float64,Dpy::Float64,fp::Float64,w
 
   coeff=.25;
   lSample=[coeff/sigmax,coeff/sigmay,12];#8
-  nbpointsgrid=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]),0)) for i in 1:3];
-  g=Array{Array{Float64,1}}(dim);
+  nbpointsgrid=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]);digits=0)) for i in 1:3];
+  g=Array{Array{Float64,1}}(undef,dim);
   for i in 1:3
-    g[i]=collect(linspace(a[i],b[i],nbpointsgrid[i]));
+    g[i]=collect(range(a[i],stop=b[i],length=nbpointsgrid[i]));
   end
 
   return doubleHelix(dim,px,py,p,Npx,Npy,Dpx,Dpy,nbpointsgrid,g,sigmax,sigmay,rotx,roty,d1rotx,d1roty,d2rotx,d2roty,bounds)
 end
 
-type gaussconv2DDoubleHelix <: operator
+mutable struct gaussconv2DDoubleHelix <: operator
     ker::DataType
     dim::Int64
     bounds::Array{Array{Float64,1},1}
@@ -428,69 +428,69 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)]);
@@ -509,17 +509,17 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -536,119 +536,119 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    return vecdot(a11,b11)+vecdot(a12,b12)+vecdot(a21,b21)+vecdot(a22,b22)-ob(x);
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    return dot(a11,b11)+dot(a12,b12)+dot(a21,b21)+dot(a22,b22)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d1c=zeros(kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d1c[1]=vecdot(da11,b11)+vecdot(da12,b12)+vecdot(da22,b22)+vecdot(da21,b21)-d1ob(1,x);
-    d1c[2]=vecdot(a11,db11)+vecdot(a12,db12)+vecdot(a22,db22)+vecdot(a21,db21)-d1ob(2,x);
-    d1c[3]=(vecdot(dc11,b11)+vecdot(a11,dd11))+(vecdot(dc22,b22)+vecdot(a22,dd22))+(vecdot(dc12,b12)+vecdot(a12,dd12))+(vecdot(dc21,b21)+vecdot(a21,dd21))-d1ob(3,x);
+    d1c[1]=dot(da11,b11)+dot(da12,b12)+dot(da22,b22)+dot(da21,b21)-d1ob(1,x);
+    d1c[2]=dot(a11,db11)+dot(a12,db12)+dot(a22,db22)+dot(a21,db21)-d1ob(2,x);
+    d1c[3]=(dot(dc11,b11)+dot(a11,dd11))+(dot(dc22,b22)+dot(a22,dd22))+(dot(dc12,b12)+dot(a12,dd12))+(dot(dc21,b21)+dot(a21,dd21))-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
 
-    dac11=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dac12=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd11=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dbd12=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda11=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dda12=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb11=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddb12=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc11=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddc12=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd11=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddd12=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac11=[dot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dac12=[dot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd11=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dbd12=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda11=[dot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dda12=[dot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb11=[dot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddb12=[dot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc11=[dot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddc12=[dot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd11=[dot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddd12=[dot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    dac22=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd22=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda22=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb22=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc22=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd22=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dac21=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dbd21=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dda21=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddb21=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddc21=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddd21=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dac22=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd22=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda22=[dot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb22=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc22=[dot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd22=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac21=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dbd21=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dda21=[dot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddb21=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddc21=[dot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddd21=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d2c[1,2]=vecdot(da11,db11)+vecdot(da22,db22)+vecdot(da12,db12)+vecdot(da21,db21)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=(vecdot(da11,dd11)+vecdot(dac11,b11))+(vecdot(da22,dd22)+vecdot(dac22,b22))+(vecdot(da12,dd12)+vecdot(dac12,b12))+(vecdot(da21,dd21)+vecdot(dac21,b21))-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=(vecdot(dc11,db11)+vecdot(a11,dbd11))+(vecdot(dc22,db22)+vecdot(a22,dbd22))+(vecdot(dc12,db12)+vecdot(a12,dbd12))+(vecdot(dc21,db21)+vecdot(a21,dbd21))-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da11,db11)+dot(da22,db22)+dot(da12,db12)+dot(da21,db21)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=(dot(da11,dd11)+dot(dac11,b11))+(dot(da22,dd22)+dot(dac22,b22))+(dot(da12,dd12)+dot(dac12,b12))+(dot(da21,dd21)+dot(dac21,b21))-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=(dot(dc11,db11)+dot(a11,dbd11))+(dot(dc22,db22)+dot(a22,dbd22))+(dot(dc12,db12)+dot(a12,dbd12))+(dot(dc21,db21)+dot(a21,dbd21))-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda11,b11)+vecdot(dda22,b22)+vecdot(dda12,b12)+vecdot(dda21,b21)-d2ob(1,x);
-    d2c[2,2]=vecdot(a11,ddb11)+vecdot(a22,ddb22)+vecdot(a12,ddb12)+vecdot(a21,ddb21)-d2ob(2,x);
-    d2c[3,3]=(vecdot(ddc11,b11)+vecdot(a11,ddd11)+2*vecdot(dc11,dd11))+(vecdot(ddc22,b22)+vecdot(a22,ddd22)+2*vecdot(dc22,dd22))+(vecdot(ddc12,b12)+vecdot(a12,ddd12)+2*vecdot(dc12,dd12))+(vecdot(ddc21,b21)+vecdot(a21,ddd21)+2*vecdot(dc21,dd21))-d2ob(3,x);
+    d2c[1,1]=dot(dda11,b11)+dot(dda22,b22)+dot(dda12,b12)+dot(dda21,b21)-d2ob(1,x);
+    d2c[2,2]=dot(a11,ddb11)+dot(a22,ddb22)+dot(a12,ddb12)+dot(a21,ddb21)-d2ob(2,x);
+    d2c[3,3]=(dot(ddc11,b11)+dot(a11,ddd11)+2*dot(dc11,dd11))+(dot(ddc22,b22)+dot(a22,ddd22)+2*dot(dc22,dd22))+(dot(ddc12,b12)+dot(a12,ddd12)+2*dot(dc12,dd12))+(dot(ddc21,b21)+dot(a21,ddd21)+2*dot(dc21,dd21))-d2ob(3,x);
     return(d2c)
   end
 
@@ -990,69 +990,69 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)])+w;
@@ -1071,17 +1071,17 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -1098,119 +1098,119 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    return vecdot(a11,b11)+vecdot(a12,b12)+vecdot(a21,b21)+vecdot(a22,b22)-ob(x);
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    return dot(a11,b11)+dot(a12,b12)+dot(a21,b21)+dot(a22,b22)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d1c=zeros(kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d1c[1]=vecdot(da11,b11)+vecdot(da12,b12)+vecdot(da22,b22)+vecdot(da21,b21)-d1ob(1,x);
-    d1c[2]=vecdot(a11,db11)+vecdot(a12,db12)+vecdot(a22,db22)+vecdot(a21,db21)-d1ob(2,x);
-    d1c[3]=(vecdot(dc11,b11)+vecdot(a11,dd11))+(vecdot(dc22,b22)+vecdot(a22,dd22))+(vecdot(dc12,b12)+vecdot(a12,dd12))+(vecdot(dc21,b21)+vecdot(a21,dd21))-d1ob(3,x);
+    d1c[1]=dot(da11,b11)+dot(da12,b12)+dot(da22,b22)+dot(da21,b21)-d1ob(1,x);
+    d1c[2]=dot(a11,db11)+dot(a12,db12)+dot(a22,db22)+dot(a21,db21)-d1ob(2,x);
+    d1c[3]=(dot(dc11,b11)+dot(a11,dd11))+(dot(dc22,b22)+dot(a22,dd22))+(dot(dc12,b12)+dot(a12,dd12))+(dot(dc21,b21)+dot(a21,dd21))-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
 
-    dac11=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dac12=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd11=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dbd12=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda11=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dda12=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb11=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddb12=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc11=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddc12=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd11=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddd12=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac11=[dot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dac12=[dot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd11=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dbd12=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda11=[dot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dda12=[dot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb11=[dot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddb12=[dot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc11=[dot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddc12=[dot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd11=[dot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddd12=[dot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    dac22=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd22=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda22=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb22=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc22=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd22=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dac21=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dbd21=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dda21=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddb21=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddc21=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddd21=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dac22=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd22=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda22=[dot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb22=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc22=[dot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd22=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac21=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dbd21=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dda21=[dot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddb21=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddc21=[dot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddd21=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d2c[1,2]=vecdot(da11,db11)+vecdot(da22,db22)+vecdot(da12,db12)+vecdot(da21,db21)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=(vecdot(da11,dd11)+vecdot(dac11,b11))+(vecdot(da22,dd22)+vecdot(dac22,b22))+(vecdot(da12,dd12)+vecdot(dac12,b12))+(vecdot(da21,dd21)+vecdot(dac21,b21))-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=(vecdot(dc11,db11)+vecdot(a11,dbd11))+(vecdot(dc22,db22)+vecdot(a22,dbd22))+(vecdot(dc12,db12)+vecdot(a12,dbd12))+(vecdot(dc21,db21)+vecdot(a21,dbd21))-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da11,db11)+dot(da22,db22)+dot(da12,db12)+dot(da21,db21)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=(dot(da11,dd11)+dot(dac11,b11))+(dot(da22,dd22)+dot(dac22,b22))+(dot(da12,dd12)+dot(dac12,b12))+(dot(da21,dd21)+dot(dac21,b21))-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=(dot(dc11,db11)+dot(a11,dbd11))+(dot(dc22,db22)+dot(a22,dbd22))+(dot(dc12,db12)+dot(a12,dbd12))+(dot(dc21,db21)+dot(a21,dbd21))-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda11,b11)+vecdot(dda22,b22)+vecdot(dda12,b12)+vecdot(dda21,b21)-d2ob(1,x);
-    d2c[2,2]=vecdot(a11,ddb11)+vecdot(a22,ddb22)+vecdot(a12,ddb12)+vecdot(a21,ddb21)-d2ob(2,x);
-    d2c[3,3]=(vecdot(ddc11,b11)+vecdot(a11,ddd11)+2*vecdot(dc11,dd11))+(vecdot(ddc22,b22)+vecdot(a22,ddd22)+2*vecdot(dc22,dd22))+(vecdot(ddc12,b12)+vecdot(a12,ddd12)+2*vecdot(dc12,dd12))+(vecdot(ddc21,b21)+vecdot(a21,ddd21)+2*vecdot(dc21,dd21))-d2ob(3,x);
+    d2c[1,1]=dot(dda11,b11)+dot(dda22,b22)+dot(dda12,b12)+dot(dda21,b21)-d2ob(1,x);
+    d2c[2,2]=dot(a11,ddb11)+dot(a22,ddb22)+dot(a12,ddb12)+dot(a21,ddb21)-d2ob(2,x);
+    d2c[3,3]=(dot(ddc11,b11)+dot(a11,ddd11)+2*dot(dc11,dd11))+(dot(ddc22,b22)+dot(a22,ddd22)+2*dot(dc22,dd22))+(dot(ddc12,b12)+dot(a12,ddd12)+2*dot(dc12,dd12))+(dot(ddc21,b21)+dot(a21,ddd21)+2*dot(dc21,dd21))-d2ob(3,x);
     return(d2c)
   end
 
@@ -1552,75 +1552,75 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)]);
   y=copy(blasso.poisson.((y./maximum(y)).*nPhoton)./nPhoton);
   y=y+w;
-  normObs=.5*vecdot(y,y);
+  normObs=.5*dot(y,y);
 
   PhisY=zeros(prod(kernel.nbpointsgrid));
   l=1;
@@ -1635,17 +1635,17 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -1662,119 +1662,119 @@ function setoperator(kernel::doubleHelix,a0::Array{Float64,1},x0::Array{Array{Fl
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    return vecdot(a11,b11)+vecdot(a12,b12)+vecdot(a21,b21)+vecdot(a22,b22)-ob(x);
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    return dot(a11,b11)+dot(a12,b12)+dot(a21,b21)+dot(a22,b22)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d1c=zeros(kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d1c[1]=vecdot(da11,b11)+vecdot(da12,b12)+vecdot(da22,b22)+vecdot(da21,b21)-d1ob(1,x);
-    d1c[2]=vecdot(a11,db11)+vecdot(a12,db12)+vecdot(a22,db22)+vecdot(a21,db21)-d1ob(2,x);
-    d1c[3]=(vecdot(dc11,b11)+vecdot(a11,dd11))+(vecdot(dc22,b22)+vecdot(a22,dd22))+(vecdot(dc12,b12)+vecdot(a12,dd12))+(vecdot(dc21,b21)+vecdot(a21,dd21))-d1ob(3,x);
+    d1c[1]=dot(da11,b11)+dot(da12,b12)+dot(da22,b22)+dot(da21,b21)-d1ob(1,x);
+    d1c[2]=dot(a11,db11)+dot(a12,db12)+dot(a22,db22)+dot(a21,db21)-d1ob(2,x);
+    d1c[3]=(dot(dc11,b11)+dot(a11,dd11))+(dot(dc22,b22)+dot(a22,dd22))+(dot(dc12,b12)+dot(a12,dd12))+(dot(dc21,b21)+dot(a21,dd21))-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
 
-    dac11=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dac12=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd11=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dbd12=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda11=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dda12=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb11=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddb12=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc11=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddc12=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd11=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddd12=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac11=[dot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dac12=[dot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd11=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dbd12=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda11=[dot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dda12=[dot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb11=[dot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddb12=[dot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc11=[dot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddc12=[dot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd11=[dot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddd12=[dot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    dac22=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd22=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda22=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb22=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc22=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd22=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dac21=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dbd21=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dda21=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddb21=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddc21=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddd21=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dac22=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd22=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda22=[dot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb22=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc22=[dot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd22=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac21=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dbd21=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dda21=[dot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddb21=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddc21=[dot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddd21=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d2c[1,2]=vecdot(da11,db11)+vecdot(da22,db22)+vecdot(da12,db12)+vecdot(da21,db21)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=(vecdot(da11,dd11)+vecdot(dac11,b11))+(vecdot(da22,dd22)+vecdot(dac22,b22))+(vecdot(da12,dd12)+vecdot(dac12,b12))+(vecdot(da21,dd21)+vecdot(dac21,b21))-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=(vecdot(dc11,db11)+vecdot(a11,dbd11))+(vecdot(dc22,db22)+vecdot(a22,dbd22))+(vecdot(dc12,db12)+vecdot(a12,dbd12))+(vecdot(dc21,db21)+vecdot(a21,dbd21))-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da11,db11)+dot(da22,db22)+dot(da12,db12)+dot(da21,db21)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=(dot(da11,dd11)+dot(dac11,b11))+(dot(da22,dd22)+dot(dac22,b22))+(dot(da12,dd12)+dot(dac12,b12))+(dot(da21,dd21)+dot(dac21,b21))-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=(dot(dc11,db11)+dot(a11,dbd11))+(dot(dc22,db22)+dot(a22,dbd22))+(dot(dc12,db12)+dot(a12,dbd12))+(dot(dc21,db21)+dot(a21,dbd21))-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda11,b11)+vecdot(dda22,b22)+vecdot(dda12,b12)+vecdot(dda21,b21)-d2ob(1,x);
-    d2c[2,2]=vecdot(a11,ddb11)+vecdot(a22,ddb22)+vecdot(a12,ddb12)+vecdot(a21,ddb21)-d2ob(2,x);
-    d2c[3,3]=(vecdot(ddc11,b11)+vecdot(a11,ddd11)+2*vecdot(dc11,dd11))+(vecdot(ddc22,b22)+vecdot(a22,ddd22)+2*vecdot(dc22,dd22))+(vecdot(ddc12,b12)+vecdot(a12,ddd12)+2*vecdot(dc12,dd12))+(vecdot(ddc21,b21)+vecdot(a21,ddd21)+2*vecdot(dc21,dd21))-d2ob(3,x);
+    d2c[1,1]=dot(dda11,b11)+dot(dda22,b22)+dot(dda12,b12)+dot(dda21,b21)-d2ob(1,x);
+    d2c[2,2]=dot(a11,ddb11)+dot(a22,ddb22)+dot(a12,ddb12)+dot(a21,ddb21)-d2ob(2,x);
+    d2c[3,3]=(dot(ddc11,b11)+dot(a11,ddd11)+2*dot(dc11,dd11))+(dot(ddc22,b22)+dot(a22,ddd22)+2*dot(dc22,dd22))+(dot(ddc12,b12)+dot(a12,ddd12)+2*dot(dc12,dd12))+(dot(ddc21,b21)+dot(a21,ddd21)+2*dot(dc21,dd21))-d2ob(3,x);
     return(d2c)
   end
 
@@ -2116,69 +2116,69 @@ function setoperator(kernel::doubleHelix,y::Array{Float64,1})
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   normObs=.5*norm(y)^2;
@@ -2196,17 +2196,17 @@ function setoperator(kernel::doubleHelix,y::Array{Float64,1})
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -2223,119 +2223,119 @@ function setoperator(kernel::doubleHelix,y::Array{Float64,1})
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    return vecdot(a11,b11)+vecdot(a12,b12)+vecdot(a21,b21)+vecdot(a22,b22)-ob(x);
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    return dot(a11,b11)+dot(a12,b12)+dot(a21,b21)+dot(a22,b22)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d1c=zeros(kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d1c[1]=vecdot(da11,b11)+vecdot(da12,b12)+vecdot(da22,b22)+vecdot(da21,b21)-d1ob(1,x);
-    d1c[2]=vecdot(a11,db11)+vecdot(a12,db12)+vecdot(a22,db22)+vecdot(a21,db21)-d1ob(2,x);
-    d1c[3]=(vecdot(dc11,b11)+vecdot(a11,dd11))+(vecdot(dc22,b22)+vecdot(a22,dd22))+(vecdot(dc12,b12)+vecdot(a12,dd12))+(vecdot(dc21,b21)+vecdot(a21,dd21))-d1ob(3,x);
+    d1c[1]=dot(da11,b11)+dot(da12,b12)+dot(da22,b22)+dot(da21,b21)-d1ob(1,x);
+    d1c[2]=dot(a11,db11)+dot(a12,db12)+dot(a22,db22)+dot(a21,db21)-d1ob(2,x);
+    d1c[3]=(dot(dc11,b11)+dot(a11,dd11))+(dot(dc22,b22)+dot(a22,dd22))+(dot(dc12,b12)+dot(a12,dd12))+(dot(dc21,b21)+dot(a21,dd21))-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Array{Float64,1},1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a11=[vecdot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b11=[vecdot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a12=[vecdot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b12=[vecdot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    a21=[vecdot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    b21=[vecdot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    a22=[vecdot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    b22=[vecdot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a11=[dot(phix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b11=[dot(phiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a12=[dot(phix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b12=[dot(phiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    a21=[dot(phix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    b21=[dot(phiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    a22=[dot(phix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    b22=[dot(phiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    da11=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    da12=[vecdot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    db11=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    db12=[vecdot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dc11=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dc12=[vecdot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dd11=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dd12=[vecdot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    da22=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    da21=[vecdot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    db22=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    db21=[vecdot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dc22=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dc21=[vecdot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dd22=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dd21=[vecdot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    da11=[dot(d1xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    da12=[dot(d1xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    db11=[dot(d1yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    db12=[dot(d1yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dc11=[dot(d1zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dc12=[dot(d1zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dd11=[dot(d1zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dd12=[dot(d1zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    da22=[dot(d1xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    da21=[dot(d1xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    db22=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    db21=[dot(d1yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dc22=[dot(d1zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dc21=[dot(d1zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dd22=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dd21=[dot(d1zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
 
-    dac11=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dac12=[vecdot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd11=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dbd12=[vecdot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda11=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dda12=[vecdot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb11=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddb12=[vecdot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc11=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddc12=[vecdot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd11=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddd12=[vecdot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac11=[dot(d11xzphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dac12=[dot(d11xzphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd11=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dbd12=[dot(d11yzphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda11=[dot(d2xphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dda12=[dot(d2xphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb11=[dot(d2yphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddb12=[dot(d2yphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc11=[dot(d2zphix(x[1],x[3],1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddc12=[dot(d2zphix(x[1],x[3],1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd11=[dot(d2zphiy(x[2],x[3],1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddd12=[dot(d2zphiy(x[2],x[3],1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
 
-    dac22=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    dbd22=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dda22=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddb22=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    ddc22=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
-    ddd22=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
-    dac21=[vecdot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    dbd21=[vecdot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    dda21=[vecdot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddb21=[vecdot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
-    ddc21=[vecdot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
-    ddd21=[vecdot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dac22=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    dbd22=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dda22=[dot(d2xphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddb22=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    ddc22=[dot(d2zphix(x[1],x[3],-1.0),Phiu[2][1][i]) for i in 1:length(Phiu[2][1])];
+    ddd22=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[2][2][i]) for i in 1:length(Phiu[2][2])];
+    dac21=[dot(d11xzphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    dbd21=[dot(d11yzphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    dda21=[dot(d2xphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddb21=[dot(d2yphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
+    ddc21=[dot(d2zphix(x[1],x[3],-1.0),Phiu[1][1][i]) for i in 1:length(Phiu[1][1])];
+    ddd21=[dot(d2zphiy(x[2],x[3],-1.0),Phiu[1][2][i]) for i in 1:length(Phiu[1][2])];
 
-    d2c[1,2]=vecdot(da11,db11)+vecdot(da22,db22)+vecdot(da12,db12)+vecdot(da21,db21)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=(vecdot(da11,dd11)+vecdot(dac11,b11))+(vecdot(da22,dd22)+vecdot(dac22,b22))+(vecdot(da12,dd12)+vecdot(dac12,b12))+(vecdot(da21,dd21)+vecdot(dac21,b21))-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=(vecdot(dc11,db11)+vecdot(a11,dbd11))+(vecdot(dc22,db22)+vecdot(a22,dbd22))+(vecdot(dc12,db12)+vecdot(a12,dbd12))+(vecdot(dc21,db21)+vecdot(a21,dbd21))-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da11,db11)+dot(da22,db22)+dot(da12,db12)+dot(da21,db21)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=(dot(da11,dd11)+dot(dac11,b11))+(dot(da22,dd22)+dot(dac22,b22))+(dot(da12,dd12)+dot(dac12,b12))+(dot(da21,dd21)+dot(dac21,b21))-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=(dot(dc11,db11)+dot(a11,dbd11))+(dot(dc22,db22)+dot(a22,dbd22))+(dot(dc12,db12)+dot(a12,dbd12))+(dot(dc21,db21)+dot(a21,dbd21))-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda11,b11)+vecdot(dda22,b22)+vecdot(dda12,b12)+vecdot(dda21,b21)-d2ob(1,x);
-    d2c[2,2]=vecdot(a11,ddb11)+vecdot(a22,ddb22)+vecdot(a12,ddb12)+vecdot(a21,ddb21)-d2ob(2,x);
-    d2c[3,3]=(vecdot(ddc11,b11)+vecdot(a11,ddd11)+2*vecdot(dc11,dd11))+(vecdot(ddc22,b22)+vecdot(a22,ddd22)+2*vecdot(dc22,dd22))+(vecdot(ddc12,b12)+vecdot(a12,ddd12)+2*vecdot(dc12,dd12))+(vecdot(ddc21,b21)+vecdot(a21,ddd21)+2*vecdot(dc21,dd21))-d2ob(3,x);
+    d2c[1,1]=dot(dda11,b11)+dot(dda22,b22)+dot(dda12,b12)+dot(dda21,b21)-d2ob(1,x);
+    d2c[2,2]=dot(a11,ddb11)+dot(a22,ddb22)+dot(a12,ddb12)+dot(a21,ddb21)-d2ob(2,x);
+    d2c[3,3]=(dot(ddc11,b11)+dot(a11,ddd11)+2*dot(dc11,dd11))+(dot(ddc22,b22)+dot(a22,ddd22)+2*dot(dc22,dd22))+(dot(ddc12,b12)+dot(a12,ddd12)+2*dot(dc12,dd12))+(dot(ddc21,b21)+dot(a21,ddd21)+2*dot(dc21,dd21))-d2ob(3,x);
     return(d2c)
   end
 
@@ -2357,16 +2357,16 @@ function minCorrelOnGrid(Phiu::Array{Array{Array{Array{Float64,1},1},1},1},kerne
   l=1;
   for k in 1:kernel.nbpointsgrid[3]
     for i in 1:kernel.nbpointsgrid[1]
-      a11=[vecdot(op.Phix[1][k][i],Phiu[1][1][m]) for m in 1:length(Phiu[1][1])];
-      a12=[vecdot(op.Phix[1][k][i],Phiu[2][1][m]) for m in 1:length(Phiu[2][1])];
-      a22=[vecdot(op.Phix[2][k][i],Phiu[2][1][m]) for m in 1:length(Phiu[2][1])];
-      a21=[vecdot(op.Phix[2][k][i],Phiu[1][1][m]) for m in 1:length(Phiu[1][1])];
+      a11=[dot(op.Phix[1][k][i],Phiu[1][1][m]) for m in 1:length(Phiu[1][1])];
+      a12=[dot(op.Phix[1][k][i],Phiu[2][1][m]) for m in 1:length(Phiu[2][1])];
+      a22=[dot(op.Phix[2][k][i],Phiu[2][1][m]) for m in 1:length(Phiu[2][1])];
+      a21=[dot(op.Phix[2][k][i],Phiu[1][1][m]) for m in 1:length(Phiu[1][1])];
       for j in 1:kernel.nbpointsgrid[2]
-        b11=[vecdot(op.Phiy[1][k][j],Phiu[1][2][m]) for m in 1:length(Phiu[1][2])];
-        b12=[vecdot(op.Phiy[1][k][j],Phiu[2][2][m]) for m in 1:length(Phiu[2][2])];
-        b22=[vecdot(op.Phiy[2][k][j],Phiu[2][2][m]) for m in 1:length(Phiu[2][2])];
-        b21=[vecdot(op.Phiy[2][k][j],Phiu[1][2][m]) for m in 1:length(Phiu[1][2])];
-        buffer=vecdot(a11,b11)+vecdot(a22,b22)+vecdot(a12,b12)+vecdot(a21,b21)-op.PhisY[l];
+        b11=[dot(op.Phiy[1][k][j],Phiu[1][2][m]) for m in 1:length(Phiu[1][2])];
+        b12=[dot(op.Phiy[1][k][j],Phiu[2][2][m]) for m in 1:length(Phiu[2][2])];
+        b22=[dot(op.Phiy[2][k][j],Phiu[2][2][m]) for m in 1:length(Phiu[2][2])];
+        b21=[dot(op.Phiy[2][k][j],Phiu[1][2][m]) for m in 1:length(Phiu[1][2])];
+        buffer=dot(a11,b11)+dot(a22,b22)+dot(a12,b12)+dot(a21,b21)-op.PhisY[l];
         if !positivity
           buffer=-abs(buffer);
         end

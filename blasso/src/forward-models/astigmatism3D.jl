@@ -1,4 +1,4 @@
-type astigmatism3D <: discrete
+mutable struct astigmatism3D <: discrete
   dim::Int64
   px::Array{Float64,1}
   py::Array{Float64,1}
@@ -23,12 +23,12 @@ end
 function setKernel(Npx::Int64,Npy::Int64,Dpx::Float64,Dpy::Float64,lamb::Float64,NA::Float64,fp::Float64,
   ni::Float64,bounds::Array{Array{Float64,1},1})
 
-  px=collect(Dpx/2+linspace(0,(Npx-1)*Dpx,Npx));
-  py=collect(Dpy/2+linspace(0,(Npy-1)*Dpy,Npy));
+  px=collect(Dpx/2+range(0,stop=(Npx-1)*Dpx,length=Npx));
+  py=collect(Dpy/2+range(0,stop=(Npy-1)*Dpy,length=Npy));
 
   dim=3;
   a,b=bounds[1],bounds[2];
-  p=Array{Array{Float64,1}}(0);
+  p=Array{Array{Float64,1}}(undef,0);
   for pyi in py
     for pxi in px
       append!(p,[[pxi,pyi]]);
@@ -49,16 +49,16 @@ function setKernel(Npx::Int64,Npy::Int64,Dpx::Float64,Dpy::Float64,lamb::Float64
 
   coeff=.25;
   lSample=[coeff/sigmax(fp),coeff/sigmay(fp),12];
-  nbpointsgrid=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]),0)) for i in 1:3];
-  g=Array{Array{Float64,1}}(dim);
+  nbpointsgrid=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]);digits=0)) for i in 1:3];
+  g=Array{Array{Float64,1}}(undef,dim);
   for i in 1:3
-    g[i]=collect(linspace(a[i],b[i],nbpointsgrid[i]));
+    g[i]=collect(range(a[i],stop=b[i],length=nbpointsgrid[i]));
   end
 
   return astigmatism3D(dim,px,py,p,Npx,Npy,Dpx,Dpy,nbpointsgrid,g,sigmax,sigmay,d1sigmax,d1sigmay,d2sigmax,d2sigmay,bounds)
 end
 
-type gaussconv2DAstigmatism <: operator
+mutable struct gaussconv2DAstigmatism <: operator
     ker::DataType
     dim::Int64
     bounds::Array{Array{Float64,1},1}
@@ -408,69 +408,69 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)]);
@@ -489,17 +489,17 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -516,53 +516,53 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    return vecdot(a,b)-ob(x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    return dot(a,b)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d1c=zeros(kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    d1c[1]=vecdot(da,b)-d1ob(1,x);
-    d1c[2]=vecdot(a,db)-d1ob(2,x);
-    d1c[3]=vecdot(dc,b)+vecdot(a,dd)-d1ob(3,x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    d1c[1]=dot(da,b)-d1ob(1,x);
+    d1c[2]=dot(a,db)-d1ob(2,x);
+    d1c[3]=dot(dc,b)+dot(a,dd)-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dac=[vecdot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dbd=[vecdot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dda=[vecdot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddb=[vecdot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    ddc=[vecdot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddd=[vecdot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dac=[dot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dbd=[dot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dda=[dot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddb=[dot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    ddc=[dot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddd=[dot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
 
-    d2c[1,2]=vecdot(da,db)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=vecdot(da,dd)+vecdot(dac,b)-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=vecdot(dc,db)+vecdot(a,dbd)-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da,db)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=dot(da,dd)+dot(dac,b)-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=dot(dc,db)+dot(a,dbd)-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda,b)-d2ob(1,x);
-    d2c[2,2]=vecdot(a,ddb)-d2ob(2,x);
-    d2c[3,3]=vecdot(ddc,b)+vecdot(a,ddd)+2*vecdot(dc,dd)-d2ob(3,x);
+    d2c[1,1]=dot(dda,b)-d2ob(1,x);
+    d2c[2,2]=dot(a,ddb)-d2ob(2,x);
+    d2c[3,3]=dot(ddc,b)+dot(a,ddd)+2*dot(dc,dd)-d2ob(3,x);
     return(d2c)
   end
 
@@ -879,69 +879,69 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)])+w;
@@ -960,17 +960,17 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -987,53 +987,53 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    return vecdot(a,b)-ob(x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    return dot(a,b)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d1c=zeros(kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    d1c[1]=vecdot(da,b)-d1ob(1,x);
-    d1c[2]=vecdot(a,db)-d1ob(2,x);
-    d1c[3]=vecdot(dc,b)+vecdot(a,dd)-d1ob(3,x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    d1c[1]=dot(da,b)-d1ob(1,x);
+    d1c[2]=dot(a,db)-d1ob(2,x);
+    d1c[3]=dot(dc,b)+dot(a,dd)-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dac=[vecdot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dbd=[vecdot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dda=[vecdot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddb=[vecdot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    ddc=[vecdot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddd=[vecdot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dac=[dot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dbd=[dot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dda=[dot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddb=[dot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    ddc=[dot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddd=[dot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
 
-    d2c[1,2]=vecdot(da,db)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=vecdot(da,dd)+vecdot(dac,b)-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=vecdot(dc,db)+vecdot(a,dbd)-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da,db)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=dot(da,dd)+dot(dac,b)-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=dot(dc,db)+dot(a,dbd)-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda,b)-d2ob(1,x);
-    d2c[2,2]=vecdot(a,ddb)-d2ob(2,x);
-    d2c[3,3]=vecdot(ddc,b)+vecdot(a,ddd)-d2ob(3,x);
+    d2c[1,1]=dot(dda,b)-d2ob(1,x);
+    d2c[2,2]=dot(a,ddb)-d2ob(2,x);
+    d2c[3,3]=dot(ddc,b)+dot(a,ddd)-d2ob(3,x);
     return(d2c)
   end
 
@@ -1350,75 +1350,75 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   y=sum([a0[i]*phiVect(x0[i]) for i in 1:length(x0)]);
   y=copy(blasso.poisson.((y./maximum(y)).*nPhoton)./nPhoton);
   y=y+w;
-  normObs=.5*vecdot(y,y);
+  normObs=.5*dot(y,y);
 
   PhisY=zeros(prod(kernel.nbpointsgrid));
   l=1;
@@ -1433,17 +1433,17 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -1460,53 +1460,53 @@ function setoperator(kernel::astigmatism3D,a0::Array{Float64,1},x0::Array{Array{
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    return vecdot(a,b)-ob(x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    return dot(a,b)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d1c=zeros(kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    d1c[1]=vecdot(da,b)-d1ob(1,x);
-    d1c[2]=vecdot(a,db)-d1ob(2,x);
-    d1c[3]=vecdot(dc,b)+vecdot(a,dd)-d1ob(3,x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    d1c[1]=dot(da,b)-d1ob(1,x);
+    d1c[2]=dot(a,db)-d1ob(2,x);
+    d1c[3]=dot(dc,b)+dot(a,dd)-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dac=[vecdot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dbd=[vecdot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dda=[vecdot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddb=[vecdot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    ddc=[vecdot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddd=[vecdot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dac=[dot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dbd=[dot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dda=[dot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddb=[dot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    ddc=[dot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddd=[dot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
 
-    d2c[1,2]=vecdot(da,db)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=vecdot(da,dd)+vecdot(dac,b)-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=vecdot(dc,db)+vecdot(a,dbd)-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da,db)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=dot(da,dd)+dot(dac,b)-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=dot(dc,db)+dot(a,dbd)-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda,b)-d2ob(1,x);
-    d2c[2,2]=vecdot(a,ddb)-d2ob(2,x);
-    d2c[3,3]=vecdot(ddc,b)+vecdot(a,ddd)-d2ob(3,x);
+    d2c[1,1]=dot(dda,b)-d2ob(1,x);
+    d2c[2,2]=dot(a,ddb)-d2ob(2,x);
+    d2c[3,3]=dot(ddc,b)+dot(a,ddd)-d2ob(3,x);
     return(d2c)
   end
 
@@ -1824,69 +1824,69 @@ function setoperator(kernel::astigmatism3D,y::Array{Float64,1})
     end
   end
 
-  c(x1::Array{Float64,1},x2::Array{Float64,1})=vecdot(phiVect(x1),phiVect(x2));
+  c(x1::Array{Float64,1},x2::Array{Float64,1})=dot(phiVect(x1),phiVect(x2));
   function d10c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d1phiVect(i,x1),phiVect(x2));
+    return dot(d1phiVect(i,x1),phiVect(x2));
   end
   function d01c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d1phiVect(i,x2));
+    return dot(phiVect(x1),d1phiVect(i,x2));
   end
   function d11c(i::Int64,j::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
     if i==1 && j==2 || i==2 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(1,x2));
     end
     if i==1 && j==3 || i==3 && j==1
-      return vecdot(d11phiVect(1,2,x1),phiVect(x2));
+      return dot(d11phiVect(1,2,x1),phiVect(x2));
     end
     if i==1 && j==4 || i==4 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(2,x2));
     end
     if i==1 && j==5 || i==5 && j==1
-      return vecdot(d11phiVect(1,3,x1),phiVect(x2));
+      return dot(d11phiVect(1,3,x1),phiVect(x2));
     end
     if i==1 && j==6 || i==6 && j==1
-      return vecdot(d1phiVect(1,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(1,x1),d1phiVect(3,x2));
     end
 
     if i==2 && j==3 || i==3 && j==2
-      return vecdot(d1phiVect(2,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(1,x2));
     end
     if i==2 && j==4 || i==4 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,2,x2));
+      return dot(phiVect(x1),d11phiVect(1,2,x2));
     end
     if i==2 && j==5 || i==5 && j==2
-      return vecdot(d1phiVect(3,x1),d1phiVect(1,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(1,x2));
     end
     if i==2 && j==6 || i==6 && j==2
-      return vecdot(phiVect(x1),d11phiVect(1,3,x2));
+      return dot(phiVect(x1),d11phiVect(1,3,x2));
     end
 
     if i==3 && j==4 || i==4 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(2,x2));
     end
     if i==3 && j==5 || i==5 && j==3
-      return vecdot(d11phiVect(2,3,x1),phiVect(x2));
+      return dot(d11phiVect(2,3,x1),phiVect(x2));
     end
     if i==3 && j==6 || i==6 && j==3
-      return vecdot(d1phiVect(2,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(2,x1),d1phiVect(3,x2));
     end
 
     if i==4 && j==5 || i==5 && j==4
-      return vecdot(d1phiVect(3,x1),d1phiVect(2,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(2,x2));
     end
     if i==4 && j==6 || i==6 && j==4
-      return vecdot(phiVect(x1),d11phiVect(2,3,x2));
+      return dot(phiVect(x1),d11phiVect(2,3,x2));
     end
 
     if i==5 && j==6 || i==6 && j==5
-      return vecdot(d1phiVect(3,x1),d1phiVect(3,x2));
+      return dot(d1phiVect(3,x1),d1phiVect(3,x2));
     end
   end
   function d20c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(d2phiVect(i,x1),phiVect(x2));
+    return dot(d2phiVect(i,x1),phiVect(x2));
   end
   function d02c(i::Int64,x1::Array{Float64,1},x2::Array{Float64,1})
-    return vecdot(phiVect(x1),d2phiVect(i,x2));
+    return dot(phiVect(x1),d2phiVect(i,x2));
   end
 
   normObs=.5*norm(y)^2;
@@ -1904,17 +1904,17 @@ function setoperator(kernel::astigmatism3D,y::Array{Float64,1})
             lp+=1;
           end
         end
-        PhisY[l]=vecdot(v,y);
+        PhisY[l]=dot(v,y);
         l+=1;
       end
     end
   end
 
   function ob(x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(phiVect(x),y);
+    return dot(phiVect(x),y);
   end
   function d1ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d1phiVect(k,x),y);
+    return dot(d1phiVect(k,x),y);
   end
   function d11ob(k::Int64,l::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
     o=1;
@@ -1931,53 +1931,53 @@ function setoperator(kernel::astigmatism3D,y::Array{Float64,1})
     if l>=5
       p=3;
     end
-    return vecdot(d11phiVect(o,p,x),y);
+    return dot(d11phiVect(o,p,x),y);
   end
   function d2ob(k::Int64,x::Array{Float64,1},y::Array{Float64,1}=y)
-    return vecdot(d2phiVect(k,x),y);
+    return dot(d2phiVect(k,x),y);
   end
 
 
   function correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    return vecdot(a,b)-ob(x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    return dot(a,b)-ob(x);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d1c=zeros(kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    d1c[1]=vecdot(da,b)-d1ob(1,x);
-    d1c[2]=vecdot(a,db)-d1ob(2,x);
-    d1c[3]=vecdot(dc,b)+vecdot(a,dd)-d1ob(3,x);
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    d1c[1]=dot(da,b)-d1ob(1,x);
+    d1c[2]=dot(a,db)-d1ob(2,x);
+    d1c[3]=dot(dc,b)+dot(a,dd)-d1ob(3,x);
     return d1c
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Array{Array{Float64,1},1},1})
     d2c=zeros(kernel.dim,kernel.dim);
-    a=[vecdot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    b=[vecdot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    da=[vecdot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    db=[vecdot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dc=[vecdot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dd=[vecdot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dac=[vecdot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    dbd=[vecdot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    dda=[vecdot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddb=[vecdot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
-    ddc=[vecdot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
-    ddd=[vecdot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    a=[dot(phix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    b=[dot(phiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    da=[dot(d1xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    db=[dot(d1yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dc=[dot(d1zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dd=[dot(d1zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dac=[dot(d11xzphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    dbd=[dot(d11yzphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    dda=[dot(d2xphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddb=[dot(d2yphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
+    ddc=[dot(d2zphix(x[1],x[3]),Phiu[1][i]) for i in 1:length(Phiu[1])];
+    ddd=[dot(d2zphiy(x[2],x[3]),Phiu[2][i]) for i in 1:length(Phiu[2])];
 
-    d2c[1,2]=vecdot(da,db)-vecdot(d11phiVect(1,2,x),y);
-    d2c[1,3]=vecdot(da,dd)+vecdot(dac,b)-vecdot(d11phiVect(1,3,x),y);
-    d2c[2,3]=vecdot(dc,db)+vecdot(a,dbd)-vecdot(d11phiVect(2,3,x),y);
+    d2c[1,2]=dot(da,db)-dot(d11phiVect(1,2,x),y);
+    d2c[1,3]=dot(da,dd)+dot(dac,b)-dot(d11phiVect(1,3,x),y);
+    d2c[2,3]=dot(dc,db)+dot(a,dbd)-dot(d11phiVect(2,3,x),y);
     d2c=d2c+d2c';
-    d2c[1,1]=vecdot(dda,b)-d2ob(1,x);
-    d2c[2,2]=vecdot(a,ddb)-d2ob(2,x);
-    d2c[3,3]=vecdot(ddc,b)+vecdot(a,ddd)-d2ob(3,x);
+    d2c[1,1]=dot(dda,b)-d2ob(1,x);
+    d2c[2,2]=dot(a,ddb)-d2ob(2,x);
+    d2c[3,3]=dot(ddc,b)+dot(a,ddd)-d2ob(3,x);
     return(d2c)
   end
 
@@ -1997,10 +1997,10 @@ function minCorrelOnGrid(Phiu::Array{Array{Array{Float64,1},1},1},kernel::blasso
   l=1;
   for k in 1:kernel.nbpointsgrid[3]
     for i in 1:kernel.nbpointsgrid[1]
-      a=[vecdot(op.Phix[k][i],Phiu[1][m]) for m in 1:length(Phiu[1])];
+      a=[dot(op.Phix[k][i],Phiu[1][m]) for m in 1:length(Phiu[1])];
       for j in 1:kernel.nbpointsgrid[2]
-        b=[vecdot(op.Phiy[k][j],Phiu[2][m]) for m in 1:length(Phiu[2])];
-        buffer=vecdot(a,b)-op.PhisY[l];
+        b=[dot(op.Phiy[k][j],Phiu[2][m]) for m in 1:length(Phiu[2])];
+        buffer=dot(a,b)-op.PhisY[l];
         if !positivity
           buffer=-abs(buffer);
         end

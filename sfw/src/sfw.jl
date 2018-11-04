@@ -1,10 +1,12 @@
 module sfw
 
-using blasso,toolbox,certificate,PyPlot
+
+using LinearAlgebra, PyPlot
+using blasso,toolbox,certificate # own modules
 
 #####################################################################################
 
-type sfw_options{}
+mutable struct sfw_options{}
   positivity::Bool
   subblock_descent::Bool
 
@@ -61,7 +63,7 @@ function sfw_options(;
   sfw_options(positivity,subblock_descent,max_mainIter,max_luIter,max_subblock_iter,dist_subblock,x_tol,a_tol,u_tol,f_tol,g_tol,eta_tol,show_mainIter,show_newPos,keep_trace,store_correl,show_trace,show_warning,show_success,show_time_newPos,show_time_localUpdate)
 end
 
-type sfw_result
+mutable struct sfw_result
   newPos::Array{Array{Float64,1},1}
   f::Real
   f_previous::Real
@@ -112,16 +114,17 @@ end
 
 function update_result!(r::sfw_result;kwargs...)
   for i in 1:length(kwargs)
-    if !( kwargs[i][1] in [:f,:f_previous,:u,:u_previous,:g,:g_previous,:blasso_converged] )
-      if length(getfield(r,kwargs[i][1]))==0
-        setfield!(r,kwargs[i][1],[kwargs[i][2]]);
-      elseif kwargs[i][1] in [:f,:f_previous]
-        copy!(getfield(r,kwargs[i][1]),kwargs[i][2]);
+    (pair,j)=iterate(kwargs,i);
+    if !( pair[1] in [:f,:f_previous,:u,:u_previous,:g,:g_previous,:blasso_converged] )
+      if length(getfield(r,pair[1]))==0
+        setfield!(r,pair[1],[pair[2]]);
+      elseif pair[1] in [:f,:f_previous]
+        copy!(getfield(r,pair[1]),pair[2]);
       else
-        append!(getfield(r,kwargs[i][1]),[kwargs[i][2]]);
+        append!(getfield(r,pair[1]),[pair[2]]);
       end
     else
-      setfield!(r,kwargs[i][1],kwargs[i][2]);
+      setfield!(r,pair[1],pair[2]);
     end
   end # for
 end
@@ -149,10 +152,10 @@ end
 
 function init_result(op::blasso.operator)
   u_start=vcat([0.0],op.bounds[1]+(op.bounds[2]-op.bounds[1])/2);
-  return sfw_result(Array{Float64}(0),0.0,0.0,Array{Float64}(0),Array{Float64}(0),Array{Vector{Float64}}(0),Array{Float64}(0),u_start,Array{Vector{Float64}}(0),Array{Vector{Float64}}(0),
-                     Array{Vector{Float64}}(0),Array{Vector{Float64}}(0),Array{Float64}(0),Array{Float64}(0),Array{Vector{Float64}}(0),Array{Vector{Float64}}(0),
-                     Array{Vector{Float64}}(0),Array{Float64}(0),Array{Float64}(0),Array{Vector{Float64}}(0),Array{Int64}(0),Array{Int64}(0),Array{Float64}(0),
-                     Array{Bool}(0),Array{Bool}(0),Array{Bool}(0),Array{Bool}(0),Array{Float64}(0),Array{Float64}(0),Array{Int64}(0),Array{Int64}(0),false);
+  return sfw_result(Array{Float64}(undef,0),0.0,0.0,Array{Float64}(undef,0),Array{Float64}(undef,0),Array{Vector{Float64}}(undef,0),Array{Float64}(undef,0),u_start,Array{Vector{Float64}}(undef,0),Array{Vector{Float64}}(undef,0),
+                     Array{Vector{Float64}}(undef,0),Array{Vector{Float64}}(undef,0),Array{Float64}(undef,0),Array{Float64}(undef,0),Array{Vector{Float64}}(undef,0),Array{Vector{Float64}}(undef,0),
+                     Array{Vector{Float64}}(undef,0),Array{Float64}(undef,0),Array{Float64}(undef,0),Array{Vector{Float64}}(undef,0),Array{Int64}(undef,0),Array{Int64}(undef,0),Array{Float64}(undef,0),
+                     Array{Bool}(undef,0),Array{Bool}(undef,0),Array{Bool}(undef,0),Array{Bool}(undef,0),Array{Float64}(undef,0),Array{Float64}(undef,0),Array{Int64}(undef,0),Array{Int64}(undef,0),false);
 end
 
 
@@ -192,7 +195,7 @@ function sfw4blasso(fobj::blasso.fobj,kernel::blasso.kernel,op::blasso.operator,
     if o.show_newPos
       println("New Position : ",result.newPos[end]);
       if o.show_time_newPos
-        println("--  Time in computeNextPosition : ",round(dt,5)," s");
+        println("--  Time in computeNextPosition : ",round(dt;digits=5)," s");
       end
     end
 
@@ -200,7 +203,7 @@ function sfw4blasso(fobj::blasso.fobj,kernel::blasso.kernel,op::blasso.operator,
     t=time();
     localUpdate!(result,op,fobj,o);
     if o.show_time_localUpdate
-      println("--  Time in localUpdate : ",round(time()-t,5)," s");
+      println("--  Time in localUpdate : ",round(time()-t;digits=5)," s");
     end
 
     ## - Check Stopping Criteria - ##
@@ -210,7 +213,7 @@ function sfw4blasso(fobj::blasso.fobj,kernel::blasso.kernel,op::blasso.operator,
   end # end for
 
   # Rescaling amplitudes if phi discrete laplace and close to experiments model
-  if :rl_model in fieldnames(op)
+  if :rl_model in fieldnames(typeof(op))
     if op.rl_model
       N=toolbox.lengthMeasure(result.u,d=op.dim);
       a,x=toolbox.decompAmpPos(result.u,d=op.dim);
@@ -321,7 +324,7 @@ function computeNextPosition!(r::sfw_result,kernel::blasso.kernel,op::blasso.ope
   #
   if o.store_correl
     Correl=zeros(100);
-    gridcoarse=collect(linspace(kernel.grid[1][1],kernel.grid[1][end],100));
+    gridcoarse=collect(range(kernel.grid[1][1],stop=kernel.grid[1][end],length=100));
     for i in 1:100
       if o.positivity
         Correl[i]=correl([gridcoarse[i]]);
@@ -339,7 +342,7 @@ function computeNextPosition!(r::sfw_result,kernel::blasso.kernel,op::blasso.ope
   argmin_grid=copy(argmin_previous);
   Argmin=copy(argmin_grid);
   if o.show_time_newPos
-    println("Time minimization on grid : ",round(time()-t,5))
+    println("Time minimization on grid : ",round(time()-t;digits=5))
   end
 
   x_low,x_up=blasso.setbounds(op,o.positivity,false);
@@ -467,7 +470,7 @@ function localUpdate!(r::sfw_result,op::blasso.operator,fobj::blasso.fobj,o::sfw
           a,x=toolbox.decompAmpPos(r.u,d=op.dim);
           m=1;
           #while (norm(norm.(d1etaL.(x)))>1e-4 || norm(sign(a)-etaL.(x))>1e-4) && m < 20
-          while norm(sign(a)-etaL.(x))>1e-4 && m < 20
+          while norm(sign.(a)-etaL.(x))>1e-4 && m < 20
             localDescent!(r.u,r,op,fobj,o,3*o.dist_subblock);
             etaL,d1etaL,d2etaL=certificate.computeEtaL(r.u,op,fobj.lambda);
             a,x=toolbox.decompAmpPos(r.u,d=op.dim);
@@ -493,10 +496,13 @@ function localUpdate!(r::sfw_result,op::blasso.operator,fobj::blasso.fobj,o::sfw
 
   etaL,d1etaL,d2etaL=certificate.computeEtaL(u_cleaned,op,fobj.lambda);
   a,x=toolbox.decompAmpPos(u_cleaned,d=op.dim);
-  if op.dim==1
-    update_result!(r;interpolation=norm(sign(a)-etaL(x)),derivatives=norm(norm.(d1etaL(x))));
-  else
-    update_result!(r;interpolation=norm(sign(a)-etaL.(x)),derivatives=norm(norm.(d1etaL.(x))));
+  # if op.dim==1
+  #   update_result!(r;interpolation=norm(sign(a)-etaL(x)),derivatives=norm(norm.(d1etaL(x))));
+  # else
+  #   update_result!(r;interpolation=norm(sign.(a)-etaL.(x)),derivatives=norm(norm.(d1etaL.(x))));
+  # end
+  if op.dim>1
+    update_result!(r;interpolation=norm(sign.(a)-etaL.(x)),derivatives=norm(norm.(d1etaL.(x))));
   end
 
   if o.keep_trace
@@ -538,7 +544,8 @@ function localDescent!(u_previous::Array{Float64,1},result::sfw.sfw_result,op::b
             return fobj.g(U,n)
         end
         function H(u::Array{Float64,1})
-            return eye((1+op.dim)*K)
+            #return eye((1+op.dim)*K)
+            return UniformScaling(1.0);
         end
 
         U_previous=copy(u_previous[Ii]);
@@ -595,7 +602,8 @@ function localDescent!(u_previous::Array{Float64,1},result::sfw.sfw_result,op::b
         return fobj.g(U,n)
       end
       function H(u::Array{Float64,1})
-        return eye((1+op.dim)*K)
+        return UniformScaling(1.0);
+        #return eye((1+op.dim)*K)
       end
 
       U_previous=copy(u_previous[Ii]);
@@ -649,12 +657,12 @@ function computeCauchyPoint(x0::Array{Float64,1},g::Array{Float64,1},B::Array{Fl
   ts=sort(t);
 
   F=[i for i in 1:M if t[i]>0];
-  fp=-vecdot(d,d);
-  fs=vecdot(d,B*d);
+  fp=-dot(d,d);
+  fs=dot(d,B*d);
   dtm=-fp/fs;
   to=0.0;
   T=minimum(t[F]);
-  b=F[indmin(t[F])];
+  b=F[argmin(t[F])];
   dt=T-to;
 
   while dtm>=dt
@@ -667,15 +675,83 @@ function computeCauchyPoint(x0::Array{Float64,1},g::Array{Float64,1},B::Array{Fl
     #z[b]=z[b]+bo-x[b];
     x[b]=bo;
 
-    fp=-vecdot(d,d);
-    fs=vecdot(d,B*d);
+    fp=-dot(d,d);
+    fs=dot(d,B*d);
 
     dtm=-fp/fs;
 
     to=T;
-    deleteat!(F,indmin(t[F]));
+    deleteat!(F,argmin(t[F]));
     T=minimum(t[F]);
-    b=F[indmin(t[F])];
+    b=F[argmin(t[F])];
+    dt=T-to;
+  end #while
+
+  dtm=maximum(vcat(dtm,0.0));
+  to=to+dtm;
+
+  @inbounds @simd for i in 1:M
+    if t[i]>=T
+      x[i]=x[i]+to*d[i];
+    end
+  end
+
+  return x,F
+end #function
+function computeCauchyPoint(x0::Array{Float64,1},g::Array{Float64,1},B::UniformScaling{Float64},lw::Array{Float64,1},up::Array{Float64,1})
+  M=length(up);
+  t,d=zeros(M),zeros(M);
+  x=copy(x0);
+  @inbounds for i in 1:M
+    if g[i]<0.0
+      if up[i]==Inf
+        t[i]=Inf;
+      else
+        t[i]=(x[i]-up[i])/g[i];
+      end
+    elseif g[i]>0.0
+      if lw[i]==-Inf
+        t[i]=Inf;
+      else
+        t[i]=(x[i]-lw[i])/g[i];
+      end
+    else
+      t[i]=Inf;
+    end #if
+    if t[i]>0.0
+      d[i]=-g[i];
+    end
+  end #for
+  ts=sort(t);
+
+  F=[i for i in 1:M if t[i]>0];
+  fp=-dot(d,d);
+  fs=dot(d,B*d);
+  dtm=-fp/fs;
+  to=0.0;
+  T=minimum(t[F]);
+  b=F[argmin(t[F])];
+  dt=T-to;
+
+  while dtm>=dt
+    if d[b]>0.0
+      bo=up[b];
+    else
+      bo=lw[b];
+    end
+    d[b]=0.0;
+    #z[b]=z[b]+bo-x[b];
+    x[b]=bo;
+
+    fp=-dot(d,d);
+    fs=dot(d,B*d);
+
+    dtm=-fp/fs;
+
+    to=T;
+    deleteat!(F,argmin(t[F]));
+    T=minimum(t[F]);
+    b=F[argmin(t[F])];
     dt=T-to;
   end #while
 
@@ -715,7 +791,7 @@ function subspaceMin(xc::Array{Float64,1},Ac::Array{Int64,1},x::Array{Float64,1}
   i=1;
   while !convergence
     Ap=A*p;
-    alpha=vecdot(r,r)/vecdot(p,Ap);
+    alpha=dot(r,r)/dot(p,Ap);
     y=y+alpha*p;
     rold=copy(r);
 
@@ -734,7 +810,59 @@ function subspaceMin(xc::Array{Float64,1},Ac::Array{Int64,1},x::Array{Float64,1}
       break;
     end
 
-    beta=vecdot(r,r)/vecdot(rold,rold);
+    beta=dot(r,r)/dot(rold,rold);
+    p=r+beta*p;
+
+    xbold=copy(xb);
+    i+=1;
+  end #while
+
+  return(xbold)
+end #function
+function subspaceMin(xc::Array{Float64,1},Ac::Array{Int64,1},x::Array{Float64,1},g::Array{Float64,1},B::UniformScaling{Float64},lw::Array{Float64,1},up::Array{Float64,1})
+  Z=zeros(length(x),length(Ac));
+  @inbounds @simd for i in 1:length(Ac)
+    Z[Ac[i],i]=1.0;
+  end
+  b=-Z'*g-Z'*B*(xc-x);
+  A=Z'*B*Z;
+
+  y=zeros(length(Ac));
+  r=b-A*y;
+  p=copy(r);
+
+  xb=xc+Z*y;
+  xbold=copy(xb);
+
+  eps=minimum(vcat(1e-8,sqrt(norm(r))))*norm(r);
+  if norm(r)<=eps
+    convergence=true;
+  else
+    convergence=false;
+  end
+  i=1;
+  while !convergence
+    Ap=A*p;
+    alpha=dot(r,r)/dot(p,Ap);
+    y=y+alpha*p;
+    rold=copy(r);
+
+    r=r-alpha*Ap;
+
+    xb=xc+Z*y;
+
+    if !checkInBounds(xb,lw,up)
+      #println("### Going out of bounds ! ###")
+      break;
+    elseif i>10
+      break;
+    elseif norm(r)<=eps
+      #println("### Hit tol ###",norm(r))
+      xbold=copy(xb);
+      break;
+    end
+
+    beta=dot(r,r)/dot(rold,rold);
     p=r+beta*p;
 
     xbold=copy(xb);
@@ -757,13 +885,14 @@ function checkInBounds(x::Array{Float64,1},lw::Array{Float64,1},up::Array{Float6
   return inB
 end #function
 
+
 function lineSearch(d::Array{Float64,1},x0::Array{Float64,1},fx0::Float64,gx0::Array{Float64,1},f::Function,g::Function,lw::Array{Float64,1},up::Array{Float64,1},o::sfw_options,typekernel::DataType=blasso.kernel)
   al,be=.2,1.2;
   MAX_STEP=20;
-  if typekernel<:blasso.cLaplace || typekernel<:blasso.dLaplace
-    if typekernel<:blasso.dulaplace
+  if typekernel<:blasso.dnlaplace
+    #if typekernel<:blasso.dulaplace
       al,be=0.4,0.999;
-    end
+    #end
   else
     MAX_STEP=50;
   end
@@ -808,7 +937,7 @@ function lineSearch(d::Array{Float64,1},x0::Array{Float64,1},fx0::Float64,gx0::A
       t=(tmin+tmax)/2;
     else
       gx=g(x);
-      #if abs(vecdot(gx,d))>be*abs(vecdot(gx0,d))
+      #if abs(dot(gx,d))>be*abs(dot(gx0,d))
       if dot(gx,d)<be*dot(gx0,d)
         tmin=t;
         t=(tmin+tmax)/2;
@@ -884,7 +1013,7 @@ function findpointLS(d::Array{Float64,1},x0::Array{Float64,1},fx0::Float64,gx0::
     end #if
   end #for
 
-  grid=collect(linspace(tmin,tmax,1000));
+  grid=collect(range(tmin,stop=tmax,length=1000));
   for i in 1:length(grid)
     t=grid[i];
     x=x0+t*d;
@@ -916,7 +1045,8 @@ function bfgs_b!(f::Function,g::Function,h::Function,x0::Array{Float64,1},lw::Ar
   # if !isposdef(Bx0)
   #   Bx0=eye(N);
   # end
-  Bx0=eye(N);
+  Bx0=UniformScaling(1.0);
+  #Bx0=eye(N);
 
   if o.show_trace
     println("Inside BFGS-B : Amplitudes/Positions ---- Energy ---- Gradient ----");
@@ -931,7 +1061,7 @@ function bfgs_b!(f::Function,g::Function,h::Function,x0::Array{Float64,1},lw::Ar
       xb=subspaceMin(xc,Ac,x0,gx0,Bx0,lw,up);
 
       chgDDescent=false;
-      if vecdot(xb-x0,gx0)>=0.0
+      if dot(xb-x0,gx0)>=0.0
         if o.show_warning
           println("### d=xb-x0 is not a descent direction ! ###")
         end
@@ -985,7 +1115,7 @@ function bfgs_b!(f::Function,g::Function,h::Function,x0::Array{Float64,1},lw::Ar
       end
 
       dg = gx-gx0;
-      c1,c2 = vecdot(dg,s),vecdot(s,Bs);
+      c1,c2 = dot(dg,s),dot(s,Bs);
       Bx = Bx0 + 1/c1 * dg * dg' - 1/c2 * Bs * Bs';
 
       # STORE
@@ -1134,16 +1264,16 @@ end
 
 function computeNewAmplitudes(r::sfw_result,op::blasso.operator,lambda::Real,tol::Real,positive::Bool=true,algo::String="FISTA")
   if op.dim == 1
-    x=Array{Float64}(1);
+    x=Array{Float64}(undef,1);
   else
-    x=Array{Array{Float64,1}}(1);
+    x=Array{Array{Float64,1}}(undef,1);
   end
 
-  newPos=r.newPos[end];
+  newPos=r.newPos[end][1];
   sameNewPos=false;
   I=1;
 
-  a_previous=Array{Float64}(1);
+  a_previous=Array{Float64}(undef,1);
   if positive
     new_a=[1.0];
   else

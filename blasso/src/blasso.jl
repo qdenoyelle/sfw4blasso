@@ -2,20 +2,20 @@
 
 module blasso
 
-using PyPlot
+using LinearAlgebra, PyPlot
 
 #####################################################################################
 
 # Abstract parent type for the different kernels
-abstract kernel
-abstract discrete <: kernel
-abstract continuous <: kernel
-abstract dLaplace <: discrete
-abstract cLaplace <: continuous
+abstract type kernel end
+abstract type discrete <: kernel end
+abstract type continuous <: kernel end
+abstract type dLaplace <: discrete end
+abstract type cLaplace <: continuous end
 
 
 # Abstract parent type for the different operators
-abstract operator
+abstract type operator end
 
 include("forward-models/dirichlet.jl");
 include("forward-models/gaussian.jl");
@@ -25,11 +25,7 @@ include("forward-models/astigmatism3D.jl");
 include("forward-models/doubleHelix.jl");
 include("forward-models/doubleHelixMultiFP.jl");
 include("forward-models/astigmatism3DMultiFP.jl");
-include("forward-models/claplace.jl");
-include("forward-models/dlaplace.jl");
 include("forward-models/dnlaplace.jl");
-include("forward-models/dulaplace.jl");
-include("forward-models/dunlaplace.jl");
 
 
 function checkOp(op::blasso.operator)
@@ -101,7 +97,7 @@ function checkOp(op::blasso.operator)
     eps_d1=1e-5;
     eps_d2=1e-5;
     tol=1e-4;
-    e=Array{Array{Float64,1}}(op.dim);
+    e=Array{Array{Float64,1}}(undef,op.dim);
     for i in 1:op.dim
       e[i]=zeros(op.dim);
       e[i][i]=1.0;
@@ -158,10 +154,10 @@ function checkOp(op::blasso.operator)
       println("Approx d2ob(x)=",a,", d2ob(x)=",b,", ",message, " : ",abs(a-b)/abs(b));
     end
 
-    if :phi in fieldnames(op)
+    if :phi in fieldnames(typeof(op))
       N=5;
       a=rand(N);
-      x=Array{Float64}(0);
+      x=Array{Float64}(undef,0);
       for i in 1:op.dim
         append!(x,op.bounds[1][i]+rand(N)*(op.bounds[2][i]-op.bounds[1][i]));
       end
@@ -170,7 +166,7 @@ function checkOp(op::blasso.operator)
       correl(x::Array{Float64,1})=op.correl(x,Phiu);
       d1correl(x::Array{Float64,1})=op.d1correl(x,Phiu);
       d2correl(x::Array{Float64,1})=op.d2correl(x,Phiu);
-      e=Array{Array{Float64,1}}((op.dim));
+      e=Array{Array{Float64,1}}(undef,(op.dim));
       x,y=blasso.pointsInDomain(op);
       for i in 1:(op.dim)
           e[i]=zeros((op.dim));
@@ -210,8 +206,8 @@ end
 # Plot observations
 function plotobservation(op::operator;kwargs...)
   if op.dim == 1
-    u=linspace(op.bounds[1],op.bounds[2],500);
-    obser=Array{Float64}(length(u));
+    u=range(op.bounds[1],stop=op.bounds[2],length=500);
+    obser=Array{Float64}(undef,length(u));
     for i in 1:length(u)
         obser[i]=op.ob(u[i]);
     end
@@ -219,10 +215,10 @@ function plotobservation(op::operator;kwargs...)
     plot(u,obser)
     show()
   elseif op.dim == 2
-    u=linspace(op.bounds[1][1],op.bounds[2][1],100);
-    v=linspace(op.bounds[1][1],op.bounds[2][2],100);
-    U=Array{Float64}(0);
-    V=Array{Float64}(0);
+    u=range(op.bounds[1][1],stop=op.bounds[2][1],length=100);
+    v=range(op.bounds[1][1],stop=op.bounds[2][2],length=100);
+    U=Array{Float64}(undef,0);
+    V=Array{Float64}(undef,0);
     Ob=zeros(length(u),length(v));
     for i in 1:length(u)
       for j in 1:length(v)
@@ -245,25 +241,25 @@ function plotobservation(op::operator;kwargs...)
     end
     if :z in key_kw
       z=kwargs[find(key_kw.==:z)][1][2];
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
     elseif :y in key_kw
       y=kwargs[find(key_kw.==:y)][1][2];
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][3],op.bounds[2][3],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][3],stop=op.bounds[2][3],length=ngrid);
     elseif :x in key_kw
       x=kwargs[find(key_kw.==:x)][1][2];
-      u=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
-      v=linspace(op.bounds[1][3],op.bounds[2][3],ngrid);
+      u=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
+      v=range(op.bounds[1][3],stop=op.bounds[2][3],length=ngrid);
     else
       z=(op.bounds[1][3]+op.bounds[2][3])/2;
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
     end
 
 
-    U=Array{Float64}(0);
-    V=Array{Float64}(0);
+    U=Array{Float64}(undef,0);
+    V=Array{Float64}(undef,0);
     Ob=zeros(length(v),length(u));
     for i in 1:length(u)
       for j in 1:length(v)
@@ -294,8 +290,8 @@ function plotobservation(u::Array{Float64,1},op::operator;kwargs...)
   Phiu=blasso.computePhiu(u,op);
   correl(x::Array{Float64,1})=op.correl(x,Phiu);
   if op.dim == 1
-    u=linspace(op.bounds[1],op.bounds[2],500);
-    obser=Array{Float64}(length(u));
+    u=range(op.bounds[1],stop=op.bounds[2],length=500);
+    obser=Array{Float64}(undef,length(u));
     for i in 1:length(u)
         obser[i]=correl([u[i]]);
     end
@@ -303,10 +299,10 @@ function plotobservation(u::Array{Float64,1},op::operator;kwargs...)
     plot(u,obser)
     show()
   elseif op.dim == 2
-    u=linspace(op.bounds[1][1],op.bounds[2][1],100);
-    v=linspace(op.bounds[1][1],op.bounds[2][2],100);
-    U=Array{Float64}(0);
-    V=Array{Float64}(0);
+    u=range(op.bounds[1][1],stop=op.bounds[2][1],length=100);
+    v=range(op.bounds[1][1],stop=op.bounds[2][2],length=100);
+    U=Array{Float64}(undef,0);
+    V=Array{Float64}(undef,0);
     Ob=zeros(length(u),length(v));
     for i in 1:length(u)
       for j in 1:length(v)
@@ -329,24 +325,24 @@ function plotobservation(u::Array{Float64,1},op::operator;kwargs...)
     end
     if :z in key_kw
       z=kwargs[find(key_kw.==:z)][1][2];
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
     elseif :y in key_kw
       y=kwargs[find(key_kw.==:y)][1][2];
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][3],op.bounds[2][3],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][3],stop=op.bounds[2][3],length=ngrid);
     elseif :x in key_kw
       x=kwargs[find(key_kw.==:x)][1][2];
-      u=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
-      v=linspace(op.bounds[1][3],op.bounds[2][3],ngrid);
+      u=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
+      v=range(op.bounds[1][3],stop=op.bounds[2][3],length=ngrid);
     else
       z=(op.bounds[1][3]+op.bounds[2][3])/2;
-      u=linspace(op.bounds[1][1],op.bounds[2][1],ngrid);
-      v=linspace(op.bounds[1][2],op.bounds[2][2],ngrid);
+      u=range(op.bounds[1][1],stop=op.bounds[2][1],length=ngrid);
+      v=range(op.bounds[1][2],stop=op.bounds[2][2],length=ngrid);
     end
 
-    U=Array{Float64}(0);
-    V=Array{Float64}(0);
+    U=Array{Float64}(undef,0);
+    V=Array{Float64}(undef,0);
     Ob=zeros(length(v),length(u));
     for i in 1:length(u)
       for j in 1:length(v)
@@ -370,7 +366,7 @@ function plotobservation(u::Array{Float64,1},op::operator;kwargs...)
 end
 
 # Objective function (and its gradient and hessian)
-immutable fobj{}
+struct fobj{}
   lambda::Real
 
   f::Function
@@ -382,7 +378,7 @@ function setfobj(op::operator,lambda::Float64)
   function energy(u::Array{Float64,1},op::operator,lambda::Real)
     a,x=blasso.decompAmpPos(u,d=op.dim);
     N=length(a);
-    if :phi in fieldnames(op)
+    if :phi in fieldnames(typeof(op))
       vect=true;
       Phi=sum([a[i]*op.phi(x[i]) for i in 1:length(a)]);
     else
@@ -391,23 +387,23 @@ function setfobj(op::operator,lambda::Float64)
 
     if vect
       residual=Phi-op.y;
-      return .5*vecdot(residual,residual) + lambda*sum(abs.(a));
+      return .5*dot(residual,residual) + lambda*sum(abs.(a));
     else
-      C=Array{Float64}((N,N));
+      C=Array{Float64}(undef,(N,N));
 
       @simd for i in 1:N
           @simd for j in 1:N
               @inbounds C[i,j]=op.c(x[i],x[j]);
           end
       end
-      return op.normObs + .5*vecdot(At_mul_B(a,C),a) - sum([a[i]*op.ob(x[i]) for i in 1:N]) + lambda*sum(abs(a));
+      return op.normObs + .5*dot(At_mul_B(a,C),a) - sum([a[i]*op.ob(x[i]) for i in 1:N]) + lambda*sum(abs(a));
     end
   end
   function computeGradientEnergy(u::Array{Float64,1},op::blasso.operator=op,lambda::Real=lambda)
     a,x=decompAmpPos(u,d=op.dim);
     N=length(a);
 
-    if :phi in fieldnames(op)
+    if :phi in fieldnames(typeof(op))
       vect=true;
       Phia=sum([a[i]*op.phi(x[i]) for i in 1:length(a)]);
       p=Phia-op.y;
@@ -427,12 +423,12 @@ function setfobj(op::operator,lambda::Float64)
       end
       daf,dxf=zeros(N),zeros(op.dim*N);
       for i in 1:N
-        daf[i]=vecdot(op.phi(x[i]),p) + lambda*sign(a[i]);
+        daf[i]=dot(op.phi(x[i]),p) + lambda*sign(a[i]);
       end
       dxf=d1Phia'*p;
       return vcat(daf,dxf);
     else ##
-      O,buffer=Array{Float64}((1+op.dim)*N),Array{Float64}((1+op.dim)*N);
+      O,buffer=Array{Float64}(undef,(1+op.dim)*N),Array{Float64}(undef,(1+op.dim)*N);
       C=zeros(Float64,((1+op.dim)*N,(1+op.dim)*N));
       if op.dim==1
         @simd for i in 1:N
@@ -443,8 +439,8 @@ function setfobj(op::operator,lambda::Float64)
             @inbounds O[i]=-op.ob(x[i]);
             @inbounds O[i+N]=-op.d1ob(x[i]);
         end
-        A_mul_B!(buffer,C,vcat(a,a));
-        return(vcat(ones(N),a).*(buffer+O+lambda*vcat(sign(a),zeros(N))));
+        mul!(buffer,C,vcat(a,a));
+        return(vcat(ones(N),a).*(buffer+O+lambda*vcat(sign.(a),zeros(N))));
       else
         @simd for i in 1:N
             @simd for j in 1:N
@@ -459,11 +455,11 @@ function setfobj(op::operator,lambda::Float64)
             end
         end
         if op.dim==2
-          A_mul_B!(buffer,C,vcat(a,a,a));
-          return(vcat(ones(N),a,a).*(buffer+O+lambda*vcat(sign(a),zeros(N),zeros(N))));
+          mul!(buffer,C,vcat(a,a,a));
+          return(vcat(ones(N),a,a).*(buffer+O+lambda*vcat(sign.(a),zeros(N),zeros(N))));
         elseif op.dim==3
-          A_mul_B!(buffer,C,vcat(a,a,a,a));
-          return(vcat(ones(N),a,a,a).*(buffer+O+lambda*vcat(sign(a),zeros(N),zeros(N),zeros(N))));
+          mul!(buffer,C,vcat(a,a,a,a));
+          return(vcat(ones(N),a,a,a).*(buffer+O+lambda*vcat(sign.(a),zeros(N),zeros(N),zeros(N))));
         end
       end
     end
@@ -472,7 +468,7 @@ function setfobj(op::operator,lambda::Float64)
     a,x=decompAmpPos(u,d=op.dim);
     N,K=length(a),length(n);
 
-    if :phi in fieldnames(op)
+    if :phi in fieldnames(typeof(op))
       Phia=sum([a[i]*op.phi(x[i]) for i in 1:length(a)]);
       p=Phia-op.y;
       Kp=length(p);
@@ -491,7 +487,7 @@ function setfobj(op::operator,lambda::Float64)
       end
       daf,dxf=zeros(K),zeros(op.dim*K);
       for i in 1:K
-        daf[i]=vecdot(op.phi(x[n[i]]),p) + lambda*sign(a[n[i]]);
+        daf[i]=dot(op.phi(x[n[i]]),p) + lambda*sign(a[n[i]]);
       end
       dxf=d1Phia'*p;
       return vcat(daf,dxf);
@@ -502,7 +498,7 @@ function setfobj(op::operator,lambda::Float64)
     a,x=decompAmpPos(u,d=op.dim);
     N=length(a);
     h=zeros(Float64,((1+op.dim)*N,(1+op.dim)*N));
-    d1C,d11C,d2C=Array{Float64}(N),Array{Float64}(N),Array{Float64}(N);
+    d1C,d11C,d2C=Array{Float64}(undef,N),Array{Float64}(undef,N),Array{Float64}(undef,N);
 
     if op.dim==1
       @simd for i in 1:2N-1
@@ -516,7 +512,7 @@ function setfobj(op::operator,lambda::Float64)
             for K in 1:N
               @inbounds d1C[K]=op.d10c(x[I],x[K])+op.d01c(x[K],x[I]);
             end
-            @inbounds h[i,j]=0.5*a[J]*(op.d10c(x[J],x[I])+op.d01c(x[I],x[J])) + (I==J)*(.5*vecdot(a,d1C) - op.d1ob(x[I]));
+            @inbounds h[i,j]=0.5*a[J]*(op.d10c(x[J],x[I])+op.d01c(x[I],x[J])) + (I==J)*(.5*dot(a,d1C) - op.d1ob(x[I]));
           end
 
           if i>N
@@ -537,7 +533,7 @@ function setfobj(op::operator,lambda::Float64)
           @simd for K in 1:N
             @inbounds d2C[K]=op.d20c(x[I],x[K])+op.d02c(x[K],x[I]);
           end
-          @inbounds h[i,i]=a[I]^2*op.d11c(x[I],x[I])-a[I]*op.d2ob(x[I])+.5*a[I]*vecdot(a,d2C);
+          @inbounds h[i,i]=a[I]^2*op.d11c(x[I],x[I])-a[I]*op.d2ob(x[I])+.5*a[I]*dot(a,d2C);
         end
       end
 
@@ -555,7 +551,7 @@ function setfobj(op::operator,lambda::Float64)
             @simd for K in 1:N
               @inbounds d1C[K]=op.d10c(k,x[I],x[K])+op.d01c(k,x[K],x[I]);
             end
-            @inbounds h[i,j+k*N]=0.5*a[J]*(op.d10c(k,x[J],x[I])+op.d01c(k,x[I],x[J])) + (I==J)*(.5*vecdot(a,d1C) - op.d1ob(k,x[I]));
+            @inbounds h[i,j+k*N]=0.5*a[J]*(op.d10c(k,x[J],x[I])+op.d01c(k,x[I],x[J])) + (I==J)*(.5*dot(a,d1C) - op.d1ob(k,x[I]));
           end
         end
       end
@@ -575,8 +571,8 @@ function setfobj(op::operator,lambda::Float64)
               @simd for m in 1:N
                 d11C[m]=(op.d11c((k-1)*op.dim+1,(l-1)*op.dim+1,x[i],x[m])+op.d11c((k-1)*op.dim+2,(l-1)*op.dim+2,x[m],x[i]));
               end
-              #@inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+1,(l)*op.dim,x[i],x[j])+op.d11c((l)*op.dim,(k-1)*op.dim+1,x[j],x[i]))+1*(i==j)*(.5*a[i]*vecdot(a,d11C) - a[i]*op.d11ob(x[i]));
-              @inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+2,(l-1)*op.dim+1,x[i],x[j])+op.d11c((k-1)*op.dim+1,(l-1)*op.dim+2,x[j],x[i]))+1*(i==j)*(.5*a[i]*vecdot(a,d11C) - a[i]*op.d11ob((k-1)*op.dim+1,(l-1)*op.dim+1,x[i]));
+              #@inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+1,(l)*op.dim,x[i],x[j])+op.d11c((l)*op.dim,(k-1)*op.dim+1,x[j],x[i]))+1*(i==j)*(.5*a[i]*dot(a,d11C) - a[i]*op.d11ob(x[i]));
+              @inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+2,(l-1)*op.dim+1,x[i],x[j])+op.d11c((k-1)*op.dim+1,(l-1)*op.dim+2,x[j],x[i]))+1*(i==j)*(.5*a[i]*dot(a,d11C) - a[i]*op.d11ob((k-1)*op.dim+1,(l-1)*op.dim+1,x[i]));
             end
           end
         end
@@ -594,7 +590,7 @@ function setfobj(op::operator,lambda::Float64)
             @simd for K in 1:N
               @inbounds d2C[K]=op.d20c(k,x[I],x[K])+op.d02c(k,x[K],x[I]);
             end
-            @inbounds h[I+k*N,I+k*N]=a[I]^2*op.d11c((k-1)*op.dim+1,(k-1)*op.dim+2,x[I],x[I])-a[I]*op.d2ob(k,x[I])+.5*a[I]*vecdot(a,d2C);
+            @inbounds h[I+k*N,I+k*N]=a[I]^2*op.d11c((k-1)*op.dim+1,(k-1)*op.dim+2,x[I],x[I])-a[I]*op.d2ob(k,x[I])+.5*a[I]*dot(a,d2C);
           end
         end
       end
@@ -614,7 +610,7 @@ function setfobj(op::operator,lambda::Float64)
             @simd for K in 1:N
               @inbounds d1C[K]=op.d10c(k,x[I],x[K])+op.d01c(k,x[K],x[I]);
             end
-            @inbounds h[i,j+k*N]=0.5*a[J]*(op.d10c(k,x[J],x[I])+op.d01c(k,x[I],x[J])) + (I==J)*(.5*vecdot(a,d1C) - op.d1ob(k,x[I]));
+            @inbounds h[i,j+k*N]=0.5*a[J]*(op.d10c(k,x[J],x[I])+op.d01c(k,x[I],x[J])) + (I==J)*(.5*dot(a,d1C) - op.d1ob(k,x[I]));
           end
         end
       end
@@ -634,8 +630,8 @@ function setfobj(op::operator,lambda::Float64)
               @simd for m in 1:N
                 d11C[m]=(op.d11c(2*(k-1)+1,2*(l-1)+1,x[i],x[m])+op.d11c(2*(k-1)+2,2*(l-1)+2,x[m],x[i]));
               end
-              #@inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+1,(l)*op.dim,x[i],x[j])+op.d11c((l)*op.dim,(k-1)*op.dim+1,x[j],x[i]))+1*(i==j)*(.5*a[i]*vecdot(a,d11C) - a[i]*op.d11ob(x[i]));
-              @inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c(2*(k-1)+2,2*(l-1)+1,x[i],x[j])+op.d11c(2*(k-1)+1,2*(l-1)+2,x[j],x[i]))+1*(i==j)*(.5*a[i]*vecdot(a,d11C) - a[i]*op.d11ob(2*(k-1)+1,2*(l-1)+1,x[i]));
+              #@inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c((k-1)*op.dim+1,(l)*op.dim,x[i],x[j])+op.d11c((l)*op.dim,(k-1)*op.dim+1,x[j],x[i]))+1*(i==j)*(.5*a[i]*dot(a,d11C) - a[i]*op.d11ob(x[i]));
+              @inbounds h[I,J]=0.5*a[i]*a[j]*(op.d11c(2*(k-1)+2,2*(l-1)+1,x[i],x[j])+op.d11c(2*(k-1)+1,2*(l-1)+2,x[j],x[i]))+1*(i==j)*(.5*a[i]*dot(a,d11C) - a[i]*op.d11ob(2*(k-1)+1,2*(l-1)+1,x[i]));
             end
           end
         end
@@ -653,7 +649,7 @@ function setfobj(op::operator,lambda::Float64)
             @simd for K in 1:N
               @inbounds d2C[K]=op.d20c(k,x[I],x[K])+op.d02c(k,x[K],x[I]);
             end
-            @inbounds h[I+k*N,I+k*N]=a[I]^2*op.d11c(2*(k-1)+1,2*(k-1)+2,x[I],x[I])-a[I]*op.d2ob(k,x[I])+.5*a[I]*vecdot(a,d2C);
+            @inbounds h[I+k*N,I+k*N]=a[I]^2*op.d11c(2*(k-1)+1,2*(k-1)+2,x[I],x[I])-a[I]*op.d2ob(k,x[I])+.5*a[I]*dot(a,d2C);
           end
         end
       end
@@ -674,7 +670,7 @@ end #function
 
 function checkfobj(fobj::blasso.fobj,op::blasso.operator;N::Int64=3)
   a=rand(N);
-  x=Array{Float64}(0);
+  x=Array{Float64}(undef,0);
   for i in 1:op.dim
     append!(x,op.bounds[1][i]+rand(N)*(op.bounds[2][i]-op.bounds[1][i]));
   end
@@ -683,7 +679,7 @@ function checkfobj(fobj::blasso.fobj,op::blasso.operator;N::Int64=3)
   eps_d2=1e-5;
   tol=1e-6;
 
-  e=Array{Array{Float64,1}}((1+op.dim)*N);
+  e=Array{Array{Float64,1}}(undef,(1+op.dim)*N);
   for i in 1:(1+op.dim)*N
     e[i]=zeros((1+op.dim)*N);
     e[i][i]=1.0;
@@ -723,7 +719,7 @@ end
 
 function lassoFISTA(x::Array{Float64,1},a_previous::Array{Float64,1},op::operator,lambda::Real,tol::Real=1e-3,positive::Bool=true,max_iter::Integer=5000000)
   N=length(x);
-  o,C=Array{Float64}(N),Array{Float64}((N,N));
+  o,C=Array{Float64}(undef,N),Array{Float64}(undef,(N,N));
   a,buffer=zeros(N),zeros(N);
 
   @simd for i in 1:N
@@ -742,7 +738,7 @@ function lassoFISTA(x::Array{Float64,1},a_previous::Array{Float64,1},op::operato
   i=0;
   convergence=false;
   while !convergence
-    A_mul_B!(buffer,C,A_previous);
+    mul!(buffer,C,A_previous);
     a=copy(A_previous-alpha*(buffer-o));
     if positive
       a=max.(blasso.softthreshold(a,alpha*lambda),0.0);
@@ -758,8 +754,8 @@ function lassoFISTA(x::Array{Float64,1},a_previous::Array{Float64,1},op::operato
     if i>=max_iter || norm(A-A_previous)<tol
       convergence=true;
     end
-    copy!(a_previous,a);
-    copy!(A_previous,A);
+    a_previous=copy(a);
+    A_previous=copy(A);
     t_previous=t;
   end
 
@@ -767,7 +763,7 @@ function lassoFISTA(x::Array{Float64,1},a_previous::Array{Float64,1},op::operato
 end
 function lassoFISTA(x::Array{Array{Float64,1},1},a_previous::Array{Float64,1},op::operator,lambda::Real,tol::Real=1e-3,positive::Bool=true,max_iter::Integer=5000000)
   N=length(x);
-  o,C=Array{Float64}(N),Array{Float64}((N,N));
+  o,C=Array{Float64}(undef,N),Array{Float64}(undef,(N,N));
   a,buffer=zeros(N),zeros(N);
 
   @simd for i in 1:N
@@ -786,7 +782,7 @@ function lassoFISTA(x::Array{Array{Float64,1},1},a_previous::Array{Float64,1},op
   i=0;
   convergence=false;
   while !convergence
-    A_mul_B!(buffer,C,A_previous);
+    mul!(buffer,C,A_previous);
     a=copy(A_previous-alpha*(buffer-o));
     if positive
       a=max.(blasso.softthreshold(a,alpha*lambda),0.0);
@@ -805,8 +801,8 @@ function lassoFISTA(x::Array{Array{Float64,1},1},a_previous::Array{Float64,1},op
         #println("# Max iter in lassoIST #, delta_a=",norm(a-a_previous));
       end
     end
-    copy!(a_previous,a);
-    copy!(A_previous,A);
+    a_previous=copy(a);
+    A_previous=copy(A);
     t_previous=t;
   end
 
@@ -830,12 +826,12 @@ end
 
 function remainInDomain(u::Array{Float64,1},bounds::Array{Float64,1})
   N=convert(Integer,length(u)/2);
-  u_domain=Array{Float64}(2N);
-  z=Array{Float64}(N);
+  u_domain=Array{Float64}(undef,2N);
+  z=Array{Float64}(undef,N);
   u_domain[1:N]=u[1:N];
   z=u[N+1:2N];
 
-  if z[indmin(z)]<bounds[1] || z[indmax(z)]>bounds[2]
+  if z[argmin(z)]<bounds[1] || z[argmax(z)]>bounds[2]
     println("Out of Domain!");
     for i in 1:N
       if z[i]<bounds[1]
@@ -903,7 +899,7 @@ function sortspikes!(a::Array{Float64,1},x::Array{Float64,1})
 end
 
 function gennoise(a::Array{Float64},level::Float64,number_spikes::Int64,bounds::Array{Float64,1})
-  min_amp=a[indmin(a)];
+  min_amp=a[argmin(a)];
 
   x_noise=bounds[1]+(bounds[2]-bounds[1])*rand(number_spikes);
   a_noise=level*min_amp*rand(number_spikes);
@@ -923,7 +919,7 @@ function plotSpikes(u::Array{Float64,1})
   barU,posBarU=zeros(N,number_points),zeros(N,number_points);
 
   for i in 1:N
-      barU[i,:]=collect(linspace(0,a[i],number_points));
+      barU[i,:]=collect(range(0,stop=a[i],length=number_points));
       posBarU[i,:]=x[i]*ones(number_points);
   end
 
@@ -939,7 +935,7 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Float64,1},op::operator;save::
   N0=convert(Integer,length(u0)/2);
   N=convert(Integer,length(u)/2);
   a,b=op.bounds[1],op.bounds[2];
-  ya,yb=min(0.0,u[indmin(u[1:N])],u0[indmin(u0[1:N0])]),max(0.0,u[indmax(u[1:N])],u0[indmax(u0[1:N0])]);
+  ya,yb=min(0.0,u[argmin(u[1:N])],u0[argmin(u0[1:N0])]),max(0.0,u[argmax(u[1:N])],u0[argmax(u0[1:N0])]);
 
   number_points=100;
   barU0,barU=zeros(N0,number_points),zeros(N,number_points);
@@ -949,12 +945,12 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Float64,1},op::operator;save::
 
   for i in 1:N0
     s0[i]=sign(u0[i]);
-    barU0[i,:]=linspace(0,abs(u0[i]),number_points);
+    barU0[i,:]=range(0,stop=abs(u0[i]),length=number_points);
     posBarU0[i,:]=u0[i+N0]*ones(number_points);
   end
   for i in 1:N
     s[i]=sign(u[i]);
-    barU[i,:]=linspace(0,abs(u[i]),number_points);
+    barU[i,:]=range(0,stop=abs(u[i]),length=number_points);
     posBarU[i,:]=u[i+N]*ones(number_points);
   end
 
@@ -970,14 +966,14 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Float64,1},op::operator;save::
   end
   plot(u0[N0+1:2N0],u0[1:N0],".",color="black",markersize=7.,label=L"$m_{a_0,x_0}$");
   plot(u[N+1:2N],u[1:N],".",color="red",markersize=7.,label=L"$m_{a,x}$");
-  plot(reshape(linspace(a,b,1000),1000),zeros(1000),color="black",linewidth=0.5);
+  plot(range(a,stop=b,length=1000),zeros(1000),color="black",linewidth=0.5);
 
   if show_obser || show_obser_est
     nbpointsgrid=blasso.nbpointsgrid(op);
-    grid=collect(linspace(op.bounds[1],op.bounds[2],nbpointsgrid));
+    grid=collect(range(op.bounds[1],stop=op.bounds[2],length=nbpointsgrid));
   end
   if show_obser
-    obser=Array{Float64}(nbpointsgrid);
+    obser=Array{Float64}(undef,nbpointsgrid);
     for i in 1:nbpointsgrid
       obser[i]=op.ob(grid[i]);
     end
@@ -985,7 +981,7 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Float64,1},op::operator;save::
     plot(grid,obser,color="black");
   end
   if show_obser_est
-    obser_est=Array{Float64}(nbpointsgrid);
+    obser_est=Array{Float64}(undef,nbpointsgrid);
     for i in 1:nbpointsgrid
       obser_est[i]=op.ob(grid[i],u[1:N],u[N+1:2N]);
     end
@@ -1020,11 +1016,11 @@ end
 function plotSpikes(u0::Array{Float64,1},u::Array{Vector{Float64},1},op::operator;save::Bool=false,show_obser=false,show_obser_est=false,titl::String="")
   N0=convert(Integer,length(u0)/2);
   a,b=op.bounds[1],op.bounds[2];
-  ya,yb=min(0.0,u0[indmin(u0[1:N0])]),max(0.0,u0[indmax(u0[1:N0])]);
+  ya,yb=min(0.0,u0[argmin(u0[1:N0])]),max(0.0,u0[argmax(u0[1:N0])]);
   number_points=100;
 
   c=Array{Vector{Float64}}(length(u));
-  t=linspace(.1,.9,length(u));
+  t=range(.1,stop=.9,length=length(u));
   for i in 1:length(u)
     c[i]=(1-t[i])*[1.0,0.0,0.0]+t[i]*[0.0,0.0,1.0];
   end
@@ -1033,7 +1029,7 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Vector{Float64},1},op::operato
   figure(figsize=(4,3))
   for k in 1:length(u)
     N=convert(Integer,length(u[k])/2);
-    ya,yb=min(ya,u[k][indmin(u[k][1:N])]),max(yb,u[k][indmax(u[k][1:N])]);
+    ya,yb=min(ya,u[k][argmin(u[k][1:N])]),max(yb,u[k][argmax(u[k][1:N])]);
 
     barU0,barU=zeros(N0,number_points),zeros(N,number_points);
     posBarU0,posBarU=zeros(N0,number_points),zeros(N,number_points);
@@ -1042,12 +1038,12 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Vector{Float64},1},op::operato
 
     for i in 1:N0
       s0[i]=sign(u0[i]);
-      barU0[i,:]=linspace(0,abs(u0[i]),number_points);
+      barU0[i,:]=collect(range(0,stop=abs(u0[i]),length=number_points));
       posBarU0[i,:]=u0[i+N0]*ones(number_points);
     end
     for i in 1:N
       s[i]=sign(u[k][i]);
-      barU[i,:]=linspace(0,abs(u[k][i]),number_points);
+      barU[i,:]=collect(range(0,stop=abs(u[k][i]),length=number_points));
       posBarU[i,:]=u[k][i+N]*ones(number_points);
     end
 
@@ -1063,7 +1059,7 @@ function plotSpikes(u0::Array{Float64,1},u::Array{Vector{Float64},1},op::operato
     end
     plot(u0[N0+1:2N0],u0[1:N0],".",color="black",markersize=12.);
     plot(u[k][N+1:2N],u[k][1:N],".",color=c[k],markersize=10.);
-    plot(reshape(linspace(a,b,100),100),zeros(100),color="black",linewidth=0.5);
+    plot(collect(range(a,stop=b,length=100)),zeros(100),color="black",linewidth=0.5);
 
   end
   axis([a,b,ya-.2,yb+.2]);
@@ -1091,7 +1087,7 @@ end
 function plotSpikes(u::Array{Float64,1},op::operator;iter::Integer=0,save::Bool=false,show_obser=false,show_obser_est=false)
   N=convert(Integer,length(u)/2);
   a,b=op.bounds[1],op.bounds[2];
-  ya,yb=min(0.0,u[indmin(u[1:N])]),max(0.0,u[indmax(u[1:N])]);
+  ya,yb=min(0.0,u[argmin(u[1:N])]),max(0.0,u[argmax(u[1:N])]);
 
   number_points=100;
   barU,posBarU=zeros(N,number_points),zeros(N,number_points);
@@ -1099,7 +1095,7 @@ function plotSpikes(u::Array{Float64,1},op::operator;iter::Integer=0,save::Bool=
 
   for i in 1:N
     s[i]=sign(u[i]);
-    barU[i,:]=linspace(0,abs(u[i]),number_points);
+    barU[i,:]=collect(range(0,stop=abs(u[i]),length=number_points));
     posBarU[i,:]=u[i+N]*ones(number_points);
   end
 
@@ -1111,14 +1107,14 @@ function plotSpikes(u::Array{Float64,1},op::operator;iter::Integer=0,save::Bool=
     plot(reshape(posBarU[i,:],number_points),s[i]*reshape(barU[i,:],number_points),"--",color="red",linewidth=2.);
   end
   plot(u[N+1:2N],u[1:N],".",color="red",markersize=10.);
-  plot(reshape(linspace(a,b,1000),1000),zeros(1000),color="black",linewidth=0.5);
+  plot(collect(range(a,stop=b,length=1000)),zeros(1000),color="black",linewidth=0.5);
 
   if show_obser || show_obser_est
     nbpointsgrid=5*length(op.Phix);
-    grid=collect(linspace(op.bounds[1],op.bounds[2],nbpointsgrid));
+    grid=collect(range(op.bounds[1],stop=op.bounds[2],length=nbpointsgrid));
   end
   if show_obser
-    obser=Array{Float64}(nbpointsgrid);
+    obser=Array{Float64}(undef,nbpointsgrid);
     for i in 1:nbpointsgrid
       obser[i]=op.ob(grid[i]);
     end
@@ -1126,7 +1122,7 @@ function plotSpikes(u::Array{Float64,1},op::operator;iter::Integer=0,save::Bool=
     plot(grid,9*obser,color="black",lw=1.0);
   end
   if show_obser_est
-    obser_est=Array{Float64}(nbpointsgrid);
+    obser_est=Array{Float64}(undef,nbpointsgrid);
     for i in 1:nbpointsgrid
       obser_est[i]=op.ob(grid[i],u[1:N],u[N+1:2N]);
     end
@@ -1188,12 +1184,12 @@ function nbpointsgrid(op::blasso.operator)
     if op.ker==blasso.gaussian2D
       coeff=.2;
       lSample=[coeff/op.sigmax,coeff/op.sigmay];
-      n=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]),0)) for i in 1:op.dim];
+      n=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]);digits=0)) for i in 1:op.dim];
     end
     if op.ker==blasso.gaussian2DLaplace
       coeff=.2;
       lSample=[coeff/op.sigmax,coeff/op.sigmay,11];
-      n=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]),0)) for i in 1:op.dim];
+      n=[convert(Int64,round(5*lSample[i]*abs(b[i]-a[i]);digits=0)) for i in 1:op.dim];
     end
   end
   return n;
@@ -1202,10 +1198,10 @@ end
 function gengrid(op::blasso.operator,nbpointsgrid::Array{Int64,1})
   b1,b2=op.bounds[1],op.bounds[2];
 
-  grid=Array{Array{Float64,1}}(prod(nbpointsgrid));
-  g=Array{Array{Float64,1}}(op.dim);
+  grid=Array{Array{Float64,1}}(undef,prod(nbpointsgrid));
+  g=Array{Array{Float64,1}}(undef,op.dim);
   for i in 1:op.dim
-    g[i]=collect(linspace(b1[i],b2[i],nbpointsgrid[i]));
+    g[i]=collect(range(b1[i],stop=b2[i],length=nbpointsgrid[i]));
   end
   if op.dim == 1
     for i in 1:length(g[1])
@@ -1244,9 +1240,9 @@ end
 function decompAmpPos(u::Array{Float64,1};d::Int64=1)
     N=lengthMeasure(u,d=d);
     if d>1
-      x=Array{Array{Float64,1}}(N);
+      x=Array{Array{Float64,1}}(undef,N);
     else
-      x=Array{Float64}(N);
+      x=Array{Float64}(undef,N);
     end
     a=u[1:N];
     for i in 1:N

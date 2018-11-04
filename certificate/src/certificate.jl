@@ -1,7 +1,9 @@
 module certificate
 
-using blasso,toolbox,PyPlot
+using LinearAlgebra, PyPlot
+using blasso,toolbox
 
+include("certificate_plots.jl");
 
 function computeEtaL(u::Array{Float64,1},op::blasso.operator,lambda::Float64)
     Phiu=blasso.computePhiu(u,op);
@@ -12,7 +14,7 @@ function computeEtaL(u::Array{Float64,1},op::blasso.operator,lambda::Float64)
     return etaL,d1etaL,d2etaL
 end
 
-function testDegenCert{T<:Real}(eta::Array{T,1},tol::Real=1e-3)
+function testDegenCert(eta::Array{Float64,1},tol::Float64=1e-3)
   bool=false;
   bool_pos=false;
 
@@ -71,7 +73,7 @@ function computeEtaV(x0::Array{Array{Float64,1},1},s::Array{Float64,1},op::blass
                   if op.dim==3
                     G[i+k*N,j+l*N]=op.d11c(1+(k-1)*(op.dim-1),2+(l-1)*(op.dim-1),x0[i],x0[j]);
                   else
-                    G[i+k*N,j+l*N]=vecdot(op.d1phi(k,x0[i]),op.d1phi(l,x0[j]));#op.d11c(1+(k-1)*(op.dim-1),3+(l-1)*(op.dim-1),x0[i],x0[j]);
+                    G[i+k*N,j+l*N]=dot(op.d1phi(k,x0[i]),op.d1phi(l,x0[j]));#op.d11c(1+(k-1)*(op.dim-1),3+(l-1)*(op.dim-1),x0[i],x0[j]);
                   end
                 end
             end
@@ -84,14 +86,10 @@ function computeEtaV(x0::Array{Array{Float64,1},1},s::Array{Float64,1},op::blass
     v=sum([a[i]*op.phi(x0[i]) for i in 1:N]) + sum([sum([a[i+k*N]*op.d1phi(k,x0[i]) for i in 1:N]) for k in 1:op.dim]);
 
     function etaV(x::Array{Float64,1})
-        return vecdot(op.phi(x),v);
+        return dot(op.phi(x),v);
     end
 
     return etaV
-end
-
-if nprocs()==1
-  include("certificate_plots.jl");
 end
 
 end # module

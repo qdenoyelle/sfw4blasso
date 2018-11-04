@@ -1,5 +1,5 @@
 # Fourier coeff kernel
-type dirichlet <: discrete
+mutable struct dirichlet <: discrete
     fc::Int64
     dim::Int64
     nbpointsgrid::Int64
@@ -13,13 +13,13 @@ function setKernel(fc::Int64)
   a,b=bounds[1],bounds[2];
 
   nbpointsgrid=convert(Integer,4*fc);
-  gr=collect(linspace(a,b,nbpointsgrid));
+  gr=collect(range(a,stop=b,length=nbpointsgrid));
 
   return dirichlet(fc,dim,nbpointsgrid,gr,bounds)
 end
 
 # Operator which gives the vector of fourier coefficients
-type fouriercoeff <: operator
+mutable struct fouriercoeff <: operator
     ker::DataType
     dim::Int64
     fc::Integer
@@ -84,44 +84,46 @@ function setoperator(kernel::dirichlet,a0::Array{Float64,1},x0::Array{Float64,1}
     return v
   end
 
-  c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),diriVect(x2));
-  d10c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),diriVect(x2));
-  d01c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d1diriVect(x2));
-  d11c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),d1diriVect(x2));
-  d20c(x1::Float64,x2::Float64)=vecdot(d2diriVect(x1),diriVect(x2));
-  d02c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d2diriVect(x2));
+  c(x1::Float64,x2::Float64)=dot(diriVect(x1),diriVect(x2));
+  d10c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),diriVect(x2));
+  d01c(x1::Float64,x2::Float64)=dot(diriVect(x1),d1diriVect(x2));
+  d11c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),d1diriVect(x2));
+  d20c(x1::Float64,x2::Float64)=dot(d2diriVect(x1),diriVect(x2));
+  d02c(x1::Float64,x2::Float64)=dot(diriVect(x1),d2diriVect(x2));
 
   y=sum([a0[i]*diriVect(x0[i]) for i in 1:length(x0)]);
   normObs=.5*norm(y)^2;
 
-  Phi=Array{Array{Float64,1}}(kernel.nbpointsgrid);
+  Phi=Array{Array{Float64,1}}(undef,kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
     Phi[i]=diriVect(kernel.grid[i]);
   end
 
   PhisY=zeros(kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
-    PhisY[i]=vecdot(Phi[i],y);
+    PhisY[i]=dot(Phi[i],y);
   end
 
   function ob(x::Float64)
-    return vecdot(diriVect(x),y);
+    return dot(diriVect(x),y);
   end
   function d1ob(x::Float64)
-    return vecdot(d1diriVect(x),y);
+    return dot(d1diriVect(x),y);
   end
   function d2ob(x::Float64)
-    return vecdot(d2diriVect(x),y);
+    return dot(d2diriVect(x),y);
   end
 
   function correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(diriVect(x[1]),Phiu-y);
+    return dot(diriVect(x[1]),Phiu-y);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d1diriVect(x[1]),Phiu-y);
+    return [dot(d1diriVect(x[1]),Phiu-y)];
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d2diriVect(x[1]),Phiu-y);
+    d2c=zeros(kernel.dim,kernel.dim);
+    d2c[1,1]=dot(d2diriVect(x[1]),Phiu-y);
+    return d2c;
   end
 
   fouriercoeff(typeof(kernel),kernel.dim,kernel.fc,kernel.bounds,normObs,Phi,PhisY,diriVect,d1diriVect,d2diriVect,y,c,ob,d10c,d01c,d11c,d20c,d02c,d1ob,d2ob,correl,d1correl,d2correl);
@@ -163,44 +165,46 @@ function setoperator(kernel::dirichlet,a0::Array{Float64,1},x0::Array{Float64,1}
     return v
   end
 
-  c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),diriVect(x2));
-  d10c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),diriVect(x2));
-  d01c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d1diriVect(x2));
-  d11c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),d1diriVect(x2));
-  d20c(x1::Float64,x2::Float64)=vecdot(d2diriVect(x1),diriVect(x2));
-  d02c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d2diriVect(x2));
+  c(x1::Float64,x2::Float64)=dot(diriVect(x1),diriVect(x2));
+  d10c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),diriVect(x2));
+  d01c(x1::Float64,x2::Float64)=dot(diriVect(x1),d1diriVect(x2));
+  d11c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),d1diriVect(x2));
+  d20c(x1::Float64,x2::Float64)=dot(d2diriVect(x1),diriVect(x2));
+  d02c(x1::Float64,x2::Float64)=dot(diriVect(x1),d2diriVect(x2));
 
   y=sum([a0[i]*diriVect(x0[i]) for i in 1:length(x0)])+w;
   normObs=.5*norm(y)^2;
 
-  Phi=Array{Array{Float64,1}}(kernel.nbpointsgrid);
+  Phi=Array{Array{Float64,1}}(undef,kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
     Phi[i]=diriVect(kernel.grid[i]);
   end
 
   PhisY=zeros(kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
-    PhisY[i]=vecdot(Phi[i],y);
+    PhisY[i]=dot(Phi[i],y);
   end
 
   function ob(x::Float64)
-    return vecdot(diriVect(x),y);
+    return dot(diriVect(x),y);
   end
   function d1ob(x::Float64)
-    return vecdot(d1diriVect(x),y);
+    return dot(d1diriVect(x),y);
   end
   function d2ob(x::Float64)
-    return vecdot(d2diriVect(x),y);
+    return dot(d2diriVect(x),y);
   end
 
   function correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(diriVect(x[1]),Phiu-y);
+    return dot(diriVect(x[1]),Phiu-y);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d1diriVect(x[1]),Phiu-y);
+    return [dot(d1diriVect(x[1]),Phiu-y)];
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d2diriVect(x[1]),Phiu-y);
+    d2c=zeros(kernel.dim,kernel.dim);
+    d2c[1,1]=dot(d2diriVect(x[1]),Phiu-y);
+    return d2c;
   end
 
   fouriercoeff(typeof(kernel),kernel.dim,kernel.fc,kernel.bounds,normObs,Phi,PhisY,diriVect,d1diriVect,d2diriVect,y,c,ob,d10c,d01c,d11c,d20c,d02c,d1ob,d2ob,correl,d1correl,d2correl);
@@ -242,43 +246,45 @@ function setoperator(kernel::dirichlet,y::Array{Float64,1})
     return v
   end
 
-  c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),diriVect(x2));
-  d10c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),diriVect(x2));
-  d01c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d1diriVect(x2));
-  d11c(x1::Float64,x2::Float64)=vecdot(d1diriVect(x1),d1diriVect(x2));
-  d20c(x1::Float64,x2::Float64)=vecdot(d2diriVect(x1),diriVect(x2));
-  d02c(x1::Float64,x2::Float64)=vecdot(diriVect(x1),d2diriVect(x2));
+  c(x1::Float64,x2::Float64)=dot(diriVect(x1),diriVect(x2));
+  d10c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),diriVect(x2));
+  d01c(x1::Float64,x2::Float64)=dot(diriVect(x1),d1diriVect(x2));
+  d11c(x1::Float64,x2::Float64)=dot(d1diriVect(x1),d1diriVect(x2));
+  d20c(x1::Float64,x2::Float64)=dot(d2diriVect(x1),diriVect(x2));
+  d02c(x1::Float64,x2::Float64)=dot(diriVect(x1),d2diriVect(x2));
 
   normObs=.5*norm(y)^2;
 
-  Phi=Array{Array{Float64,1}}(kernel.nbpointsgrid);
+  Phi=Array{Array{Float64,1}}(undef,kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
     Phi[i]=diriVect(kernel.grid[i]);
   end
 
   PhisY=zeros(kernel.nbpointsgrid);
   for i in 1:kernel.nbpointsgrid
-    PhisY[i]=vecdot(Phi[i],y);
+    PhisY[i]=dot(Phi[i],y);
   end
 
   function ob(x::Float64)
-    return vecdot(diriVect(x),y);
+    return dot(diriVect(x),y);
   end
   function d1ob(x::Float64)
-    return vecdot(d1diriVect(x),y);
+    return dot(d1diriVect(x),y);
   end
   function d2ob(x::Float64)
-    return vecdot(d2diriVect(x),y);
+    return dot(d2diriVect(x),y);
   end
 
   function correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(diriVect(x[1]),Phiu-y);
+    return dot(diriVect(x[1]),Phiu-y);
   end
   function d1correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d1diriVect(x[1]),Phiu-y);
+    return [dot(d1diriVect(x[1]),Phiu-y)];
   end
   function d2correl(x::Array{Float64,1},Phiu::Array{Float64,1})
-    return vecdot(d2diriVect(x[1]),Phiu-y);
+    d2c=zeros(kernel.dim,kernel.dim);
+    d2c[1,1]=dot(d2diriVect(x[1]),Phiu-y);
+    return d2c;
   end
 
   fouriercoeff(typeof(kernel),kernel.dim,kernel.fc,kernel.bounds,normObs,Phi,PhisY,diriVect,d1diriVect,d2diriVect,y,c,ob,d10c,d01c,d11c,d20c,d02c,d1ob,d2ob,correl,d1correl,d2correl);
@@ -296,7 +302,7 @@ function minCorrelOnGrid(Phiu::Array{Float64,1},kernel::blasso.dirichlet,op::bla
   correl_min,argmin=Inf,zeros(op.dim);
   l=1;
   for i in 1:kernel.nbpointsgrid
-    buffer=vecdot(op.Phi[i],Phiu)-op.PhisY[i];
+    buffer=dot(op.Phi[i],Phiu)-op.PhisY[i];
     if !positivity
       buffer=-abs(buffer);
     end
