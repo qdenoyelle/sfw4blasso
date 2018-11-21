@@ -60,7 +60,7 @@ function checkOp(op::blasso.operator)
     end
     println("Approx d20c(x,y)=",a,", d20c(x,y)=",b,", ",message);
 
-    a,b=(op.d01c(x,y+eps_d1)-op.d01c(x,y-eps_d1))/(2*eps_d1),op.d20c(x,y);
+    a,b=(op.d01c(x,y+eps_d1)-op.d01c(x,y-eps_d1))/(2*eps_d1),op.d02c(x,y);
     if abs(a-b)/abs(b)<tol
       message="Ok";
     else
